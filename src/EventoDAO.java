@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class EventoDAO {
 
 private Arquivo<Evento> arqEventos;
@@ -20,6 +22,8 @@ public boolean alterarEvento(Evento e) throws Exception {
 
 public boolean excluirEvento(int id) throws Exception {
     return arqEventos.delete(id);
+} 
+public ArrayList<Evento> listarEventos() throws Exception {
+    return arqEventos.readAll(); // ou o método equivalente da sua classe Arquivo
 }
-
 }

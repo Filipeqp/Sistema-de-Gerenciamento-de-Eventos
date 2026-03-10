@@ -1,12 +1,34 @@
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 
 public class Arquivo<T extends Registro> {
-    private static final int TAM_CABECALHO = 4;
+    
+    private static final int TAM_CABECALHO = 12; // 4 (int) + 8 (long)
     private RandomAccessFile arquivo;
     private String nomeArquivo;
     private Constructor<T> construtor;
+    
+    // Adicione este método novo:
+public ArrayList<T> readAll() throws Exception {
+    ArrayList<T> lista = new ArrayList<>();
+    arquivo.seek(TAM_CABECALHO);
+
+    while (arquivo.getFilePointer() < arquivo.length()) {
+        byte lapide = arquivo.readByte();
+        short tamanho = arquivo.readShort();
+        byte[] dados = new byte[tamanho];
+        arquivo.read(dados);
+
+        if (lapide == ' ') {
+            T obj = construtor.newInstance();
+            obj.fromByteArray(dados);
+            lista.add(obj);
+        }
+    }
+    return lista;
+}
 
     public Arquivo(String nomeArquivo, Constructor<T> construtor) throws Exception {
         File diretorio = new File("./dados");

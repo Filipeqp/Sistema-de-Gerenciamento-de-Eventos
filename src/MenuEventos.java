@@ -1,4 +1,5 @@
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class MenuEventos {
 
@@ -17,10 +18,11 @@ public void menu() {
     do {
 
         System.out.println("\n\nMENU EVENTOS");
-        System.out.println("1 - Buscar evento");
-        System.out.println("2 - Incluir evento");
-        System.out.println("3 - Alterar evento");
-        System.out.println("4 - Excluir evento");
+        System.out.println("1 - Listar eventos");
+        System.out.println("2 - Buscar evento");
+        System.out.println("3 - Incluir evento");
+        System.out.println("4 - Alterar evento");
+        System.out.println("5 - Excluir evento");
         System.out.println("0 - Voltar");
 
         System.out.print("\nOpção: ");
@@ -34,18 +36,22 @@ public void menu() {
         switch (opcao) {
 
             case 1:
-                buscar();
+                listar();
                 break;
 
             case 2:
-                incluir();
+                buscar();
                 break;
 
             case 3:
-                alterar();
+                incluir();
                 break;
 
             case 4:
+                alterar();
+                break;
+
+            case 5:
                 excluir();
                 break;
 
@@ -60,6 +66,24 @@ public void menu() {
     } while (opcao != 0);
 
 }
+
+private void listar() {
+    System.out.println("\nLISTA DE EVENTOS\n");
+    try {
+        ArrayList<Evento> eventos = eventoDAO.listarEventos();
+        if (eventos.isEmpty()) {
+            System.out.println("Nenhum evento cadastrado.");
+        } else {
+            for (Evento e : eventos) {
+                System.out.println(e);
+                System.out.println("--------------------");
+            }
+        }
+    } catch (Exception ex) {
+        System.out.println("Erro ao listar eventos.");
+    }
+}
+
 
 private void buscar() {
 
