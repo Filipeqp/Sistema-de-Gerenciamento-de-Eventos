@@ -3,6 +3,7 @@ import java.io.RandomAccessFile;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 
+//teste 
 public class Arquivo<T extends Registro> {
     
     private static final int TAM_CABECALHO = 12; // 4 (int) + 8 (long)
@@ -32,18 +33,20 @@ public ArrayList<T> readAll() throws Exception {
 
     public Arquivo(String nomeArquivo, Constructor<T> construtor) throws Exception {
         File diretorio = new File("./dados");
-        if (!diretorio.exists()) diretorio.mkdir();
+        if (!diretorio.exists())
+            diretorio.mkdir();
 
         diretorio = new File("./dados/" + nomeArquivo);
-        if (!diretorio.exists()) diretorio.mkdir();
+        if (!diretorio.exists())
+            diretorio.mkdir();
 
         this.nomeArquivo = "./dados/" + nomeArquivo + "/" + nomeArquivo + ".db";
         this.construtor = construtor;
         this.arquivo = new RandomAccessFile(this.nomeArquivo, "rw");
 
         if (arquivo.length() < TAM_CABECALHO) {
-            arquivo.writeInt(0);    // Último ID usado
-            arquivo.writeLong(-1);  // Lista de registros excluídos
+            arquivo.writeInt(0); // Último ID usado
+            arquivo.writeLong(-1); // Lista de registros excluídos
         }
     }
 
@@ -59,12 +62,12 @@ public ArrayList<T> readAll() throws Exception {
         if (endereco == -1) {
             arquivo.seek(arquivo.length());
             endereco = arquivo.getFilePointer();
-            arquivo.writeByte(' ');  // Lápide
+            arquivo.writeByte(' '); // Lápide
             arquivo.writeShort(dados.length);
             arquivo.write(dados);
         } else {
             arquivo.seek(endereco);
-            arquivo.writeByte(' ');  // Remove a lápide
+            arquivo.writeByte(' '); // Remove a lápide
             arquivo.skipBytes(2);
             arquivo.write(dados);
         }
