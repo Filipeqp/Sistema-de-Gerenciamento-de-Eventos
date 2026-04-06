@@ -2,56 +2,73 @@ import java.util.Scanner;
 
 public class Principal {
 
-public static void main(String[] args) {
+    public static void main(String[] args) {
 
-    Scanner console = new Scanner(System.in);
-    int opcao;
+        Scanner console = new Scanner(System.in);
+        int opcao;
 
-    try {
+        try {
 
-        do {
+            do {
 
-            System.out.println("\n\nAEDsIII");
-            System.out.println("-------");
-            System.out.println("> Início");
-            System.out.println("\n1 - Eventos");
-            System.out.println("0 - Sair");
+                System.out.println("\n\nAEDsIII - Sistema de Gerenciamento de Eventos");
+                System.out.println("----------------------------------------------");
+                System.out.println("> Início");
+                System.out.println("\n1 - Eventos");
+                System.out.println("2 - Palestrantes");
+                System.out.println("3 - Participantes");
+                System.out.println("4 - Inscrições");
+                System.out.println("0 - Sair");
 
-            System.out.print("\nOpção: ");
+                System.out.print("\nOpção: ");
 
-            try {
-                opcao = Integer.valueOf(console.nextLine());
-            } 
-            catch (NumberFormatException e) {
-                opcao = -1;
-            }
+                try {
+                    opcao = Integer.valueOf(console.nextLine());
+                } catch (NumberFormatException e) {
+                    opcao = -1;
+                }
 
-            switch (opcao) {
+                switch (opcao) {
 
-                case 1:
-                    MenuEventos menuEventos = new MenuEventos();
-                    menuEventos.menu();
-                    break;
+                    case 1:
+                        MenuEventos menuEventos = new MenuEventos();
+                        menuEventos.menu();
+                        break;
 
-                case 0:
-                    System.out.println("Saindo...");
-                    break;
+                    case 2:
+                        MenuPalestrantes menuPalestrantes = new MenuPalestrantes();
+                        menuPalestrantes.menu();
+                        break;
 
-                default:
-                    System.out.println("Opção inválida!");
-                    break;
-            }
+                    case 3:
+                        MenuParticipantes menuParticipantes = new MenuParticipantes();
+                        menuParticipantes.menu();
+                        break;
 
-        } while (opcao != 0);
+                    case 4:
+                        MenuInscricoes menuInscricoes = new MenuInscricoes();
+                        menuInscricoes.menu();
+                        break;
 
-    } catch (Exception e) {
+                    case 0:
+                        System.out.println("Saindo...");
+                        break;
 
-        System.err.println("Erro fatal no sistema:");
-        e.printStackTrace();
+                    default:
+                        System.out.println("Opção inválida!");
+                        break;
+                }
 
-    } finally {
+            } while (opcao != 0);
 
-        console.close();
+        } catch (Exception e) {
+
+            System.err.println("Erro fatal no sistema:");
+            e.printStackTrace();
+
+        } finally {
+
+            console.close();
+        }
     }
-}
 }
