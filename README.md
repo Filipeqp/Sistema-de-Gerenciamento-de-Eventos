@@ -1,6 +1,6 @@
 ﻿# 🎫 GestEvent — Sistema de Gerenciamento de Eventos3
  
-# 📚 Engenharia da Computação
+## 📚 Engenharia da Computação
 
 ## 👨‍💻 Desenvolvido por
 
