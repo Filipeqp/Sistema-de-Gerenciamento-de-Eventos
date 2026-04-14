@@ -1,12 +1,12 @@
-﻿# 🎫 GestEvent — Sistema de Gerenciamento de Eventos
+﻿# 🎫 GestEvent — Sistema de Gerenciamento de Eventos3
+ 
+📚 Engenharia da Computação
 
 ## 👨‍💻 Desenvolvido por
 
 * **Filipe Quaresma Pereira**
 * **Vitor Luis Amaral**
-* 
-  📚 Engenharia da Computação
-
+  
 ---
 
 ## 💡 Sobre o Projeto
