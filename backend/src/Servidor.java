@@ -35,7 +35,6 @@ public class Servidor {
     }
 
     private static void sendResponse(HttpExchange ex, int status, String body) throws IOException {
-        addCors(ex);
         ex.getResponseHeaders().add("Content-Type", "application/json; charset=UTF-8");
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, bytes.length);

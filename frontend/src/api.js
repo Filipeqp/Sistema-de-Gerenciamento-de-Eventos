@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const BASE = 'http://localhost:8080';
+const host = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+const BASE = `http://${host || '127.0.0.1'}:8080`;
 
 export const eventoAPI = {
   listar: () => axios.get(`${BASE}/eventos`),
