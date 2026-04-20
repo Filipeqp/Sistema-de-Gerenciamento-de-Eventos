@@ -1,112 +1,114 @@
-﻿# 🎫 GestEvent — Sistema de Gerenciamento de Eventos
- 
-## 📚 Engenharia da Computação
+# GestEvent
 
-## 👨‍💻 Desenvolvido por
+Sistema academico de gerenciamento de eventos desenvolvido para AED III, com persistencia em arquivos binarios, indice primario por entidade, Hash Extensivel e interface web.
 
-* **Filipe Quaresma Pereira**
-* **Vitor Luis Amaral**
-  
----
+## Funcionalidades
 
-## 💡 Sobre o Projeto
+- CRUD completo de eventos
+- CRUD completo de participantes
+- CRUD completo de palestrantes
+- CRUD completo de inscricoes
+- Exclusao logica com lapide
+- Persistencia entre execucoes
+- Indice primario persistente por entidade
+- Hash Extensivel para acesso por chave primaria
+- Indices relacionais para:
+  - `Evento -> Palestrantes`
+  - `Evento -> Inscricoes`
+  - `Participante -> Inscricoes`
+- Integridade referencial entre as entidades
 
-O **GestEvent** é um sistema de gerenciamento de eventos inspirado em plataformas como o **Sympla**, com o objetivo de facilitar o controle de eventos acadêmicos e tecnológicos.
+## Arquitetura
 
-A proposta é oferecer uma solução completa para:
+O backend foi reorganizado em camadas:
 
-* 📅 Cadastro de eventos
-* 🎤 Gerenciamento de palestrantes
-* 👥 Cadastro de participantes
-* 📝 Controle de inscrições
+- `eventos.model`: entidades do dominio
+- `eventos.persistence`: manipulacao dos arquivos binarios
+- `eventos.index`: Hash Extensivel e indices relacionais
+- `eventos.dao`: acesso aos dados e integracao com indices
+- `eventos.controller`: regras de negocio
+- `eventos.server`: servidor HTTP
 
-Tudo isso **sem uso de banco de dados tradicional**, utilizando **arquivos binários** para persistência de dados, conforme os requisitos da disciplina de AED III 
+O frontend permanece em React com Vite, consumindo a API HTTP do backend.
 
----
+## Estrutura de dados
 
-## 🎯 Objetivo
+### Persistencia binaria
 
-Desenvolver um sistema completo que permita:
+Cada entidade possui:
 
-* CRUD de todas as entidades (Eventos, Participantes, Palestrantes e Inscrições)
-* Persistência de dados em arquivos binários
-* Controle de exclusão lógica (lápide)
-* Estrutura preparada para futuras otimizações (Hash Extensível e Árvore B+)
+- um arquivo de dados binario
+- um cabecalho com ultimo ID e ponteiro para a lista de espacos removidos
+- registros com lapide e tamanho
 
----
+### Indice primario
 
-## 🏗️ Arquitetura
+Cada entidade possui um indice `id -> endereco` persistido em disco.
 
-O sistema segue uma arquitetura baseada em:
+### Hash Extensivel
 
-* **MVC (Model-View-Controller)**
-* **DAO (Data Access Object)**
+O indice primario usa Hash Extensivel com:
 
-### 🔹 Camadas:
+- diretorio persistente
+- buckets com profundidade local
+- duplicacao do diretorio quando necessario
+- split de bucket em caso de overflow
 
-* **Model** → Classes como `Evento`, `Participante`, etc.
-* **DAO** → Responsável pela persistência em arquivos
-* **Controller** → Regras de negócio e controle da aplicação
-* **View** → Interface (React)
+### Indices de relacionamento
 
-Essa separação melhora a organização, manutenção e evolução do sistema 
+Os relacionamentos sao atendidos por listas ligadas persistentes com cabeca localizada por Hash Extensivel:
 
----
+- palestrantes por evento
+- inscricoes por evento
+- inscricoes por participante
 
-## 🔗 Relacionamentos do Sistema
+## Regras de negocio
 
-* **1:N** → Evento → Palestrantes
-* **N:N** → Evento ↔ Participantes (via Inscrição)
+- nao e permitido cadastrar palestrante em evento inexistente
+- nao e permitido cadastrar inscricao com evento inexistente
+- nao e permitido cadastrar inscricao com participante inexistente
+- nao e permitido duplicar inscricao do mesmo participante no mesmo evento
+- nao e permitido excluir evento com palestrantes ou inscricoes ativas
+- nao e permitido excluir participante com inscricoes ativas
+- apenas registros ativos sao listados
 
----
+## Como executar
 
-## 🌐 Tecnologias Utilizadas
+## Pre-requisitos
+
+- Java JDK 17 ou superior instalado
+- Node.js 20 ou superior instalado
+- `npm` disponivel no terminal
+- Porta `8080` livre para o backend
+- Porta `5173` livre para o frontend
 
 ### Backend
 
-* Java
-* HttpServer (API REST)
-* Arquivos binários para persistência
-
-### Frontend
-
-* React (Vite)
-* JavaScript
-* CSS
-
----
-
-## 🔥 Funcionalidades
-
-* ✅ Cadastrar eventos
-* ✅ Cadastrar participantes
-* ✅ Cadastrar palestrantes
-* ✅ Realizar inscrições
-* ✅ Listar dados
-* ✅ Atualizar registros
-* ✅ Exclusão lógica
-
----
-
-## 🚀 Como Executar
-
-### 🔹 Backend
-
 ```bash
 cd backend/src
-javac *.java
-java Servidor
+javac eventos/server/Main.java
+java eventos.server.Main
 ```
 
-Servidor rodando em:
+Servidor:
 
-```
+```text
 http://localhost:8080
 ```
 
----
+Teste rapido:
 
-### 🔹 Frontend
+```text
+http://localhost:8080/health
+```
+
+Resposta esperada:
+
+```json
+{"status":"ok"}
+```
+
+### Frontend
 
 ```bash
 cd frontend
@@ -114,46 +116,51 @@ npm install
 npm run dev
 ```
 
-Acesse:
+Frontend:
 
-```
+```text
 http://localhost:5173
 ```
 
----
+## Ordem recomendada para rodar
 
-## 🔄 Comunicação (API REST)
+1. Abra um terminal na pasta do projeto
+2. Inicie o backend
+3. Abra um segundo terminal
+4. Inicie o frontend
+5. Acesse a aplicacao no navegador
 
-O frontend se comunica com o backend através de requisições HTTP:
+## Estrutura importante para execucao
 
-* `GET` → Listar dados
-* `POST` → Criar registros
-* `PUT` → Atualizar
-* `DELETE` → Remover
+- O backend principal esta em `backend/src/eventos/server/Main.java`
+- Os dados binarios antigos ficam em `backend/src/dados`
+- Os novos indices e arquivos auxiliares sao criados em `backend/src/storage` durante a execucao
 
-Exemplo:
+## Endpoints
 
-```
-http://localhost:8080/eventos
-```
+- `GET /eventos`
+- `GET /eventos/{id}`
+- `POST /eventos`
+- `PUT /eventos/{id}`
+- `DELETE /eventos/{id}`
+- `GET /palestrantes`
+- `GET /palestrantes?idEvento={idEvento}`
+- `GET /participantes`
+- `GET /inscricoes`
+- `GET /inscricoes?idEvento={idEvento}`
+- `GET /inscricoes?idParticipante={idParticipante}`
 
----
+## Documentacao
 
-## 📦 Persistência de Dados
+Os arquivos em `docs/` incluem:
 
-* Armazenamento em arquivos binários
-* Controle de:
+- `DCU.md`
+- `DER.md`
+- `arquitetura.md`
+- `hash-extensivel.md`
+- `persistencia.md`
 
-  * IDs
-  * Número de registros
-  * Exclusão lógica (lápide)
+## Observacoes
 
----
-
-## 🧠 Motivação
-
-O sistema foi desenvolvido para resolver a dificuldade de gerenciar eventos sem depender de plataformas pagas, oferecendo uma alternativa acadêmica funcional e escalável 
-
----
-
-💥 Projeto desenvolvido para a disciplina de **Algoritmos e Estruturas de Dados III**
+- O projeto antigo em classes soltas foi mantido no repositorio como referencia historica.
+- A nova implementacao principal esta no pacote `eventos`.

@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import Eventos from './pages/Eventos';
-import Palestrantes from './pages/Palestrantes';
-import Participantes from './pages/Participantes';
-import Inscricoes from './pages/Inscricoes';
+import Eventos from './pages/EventosPage';
+import Palestrantes from './pages/PalestrantesPage';
+import Participantes from './pages/ParticipantesPage';
+import Inscricoes from './pages/InscricoesPage';
 import './App.css';
 
 export default function App() {
@@ -12,14 +12,14 @@ export default function App() {
         <header className="header">
           <div className="header-inner">
             <div className="logo">
-              <span className="logo-icon">◈</span>
+              <span className="logo-icon">GE</span>
               <span className="logo-text">GestEvent</span>
             </div>
             <nav className="nav">
               <NavLink to="/" end className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Eventos</NavLink>
               <NavLink to="/palestrantes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Palestrantes</NavLink>
               <NavLink to="/participantes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Participantes</NavLink>
-              <NavLink to="/inscricoes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Inscrições</NavLink>
+              <NavLink to="/inscricoes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Inscricoes</NavLink>
             </nav>
           </div>
         </header>

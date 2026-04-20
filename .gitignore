@@ -1,0 +1,4 @@
+backend/src/**/*.class
+backend/src/storage/
+frontend/node_modules/
+frontend/dist/
