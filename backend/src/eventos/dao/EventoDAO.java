@@ -19,4 +19,12 @@ public class EventoDAO extends AbstractDAO<Evento> {
     public boolean delete(int id) throws Exception {
         return deleteInternal(id);
     }
+
+    /**
+     * Chave de ordenação da B+: nome do evento (case-insensitive).
+     */
+    @Override
+    protected String sortKey(Evento evento) {
+        return evento.getNome() != null ? evento.getNome() : "";
+    }
 }

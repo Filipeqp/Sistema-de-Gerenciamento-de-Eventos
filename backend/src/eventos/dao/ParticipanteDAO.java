@@ -19,4 +19,9 @@ public class ParticipanteDAO extends AbstractDAO<Participante> {
     public boolean delete(int id) throws Exception {
         return deleteInternal(id);
     }
+
+    @Override
+    protected String sortKey(Participante p) {
+        return p.getNome() != null ? p.getNome() : "";
+    }
 }

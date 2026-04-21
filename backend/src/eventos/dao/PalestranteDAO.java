@@ -13,7 +13,9 @@ public class PalestranteDAO extends AbstractDAO<Palestrante> {
 
     public PalestranteDAO(String basePath) throws Exception {
         super(basePath, "palestrantes", Palestrante.class);
-        this.byEventoIndex = new LinkedEntityListIndex(basePath + "/indices/palestrantes", "palestrantes_por_evento");
+        this.byEventoIndex = new LinkedEntityListIndex(
+                basePath + "/indices/palestrantes",
+                "palestrantes_por_evento");
         rebuildRelationshipIndexIfNeeded();
     }
 
@@ -29,16 +31,33 @@ public class PalestranteDAO extends AbstractDAO<Palestrante> {
         return deleteInternal(id);
     }
 
+    /**
+     * Lista palestrantes de um evento via LinkedEntityListIndex (1:N por índice).
+     */
     public List<Palestrante> listByEvento(int idEvento) throws Exception {
         Set<Integer> ids = byEventoIndex.list(idEvento);
         List<Palestrante> items = new ArrayList<>();
         for (Integer id : ids) {
-            Palestrante palestrante = findById(id);
-            if (palestrante != null && palestrante.getIdEvento() == idEvento) {
-                items.add(palestrante);
+            Palestrante p = findById(id);
+            if (p != null && p.getIdEvento() == idEvento) {
+                items.add(p);
             }
         }
         return items;
+    }
+
+    /**
+     * Lista palestrantes de um evento em ordem de nome (usa B+ + filtro).
+     */
+    public List<Palestrante> listByEventoOrdered(int idEvento) throws Exception {
+        List<Palestrante> all = listByEvento(idEvento);
+        all.sort((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()));
+        return all;
+    }
+
+    @Override
+    protected String sortKey(Palestrante p) {
+        return p.getNome() != null ? p.getNome() : "";
     }
 
     @Override
@@ -60,11 +79,9 @@ public class PalestranteDAO extends AbstractDAO<Palestrante> {
     }
 
     private void rebuildRelationshipIndexIfNeeded() throws Exception {
-        if (!byEventoIndex.isEmpty()) {
-            return;
-        }
-        for (Palestrante palestrante : listAll()) {
-            byEventoIndex.add(palestrante.getIdEvento(), palestrante.getId());
+        if (!byEventoIndex.isEmpty()) return;
+        for (Palestrante p : listAll()) {
+            byEventoIndex.add(p.getIdEvento(), p.getId());
         }
     }
 }

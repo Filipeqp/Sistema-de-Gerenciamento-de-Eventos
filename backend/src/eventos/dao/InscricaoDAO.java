@@ -14,8 +14,12 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
     public InscricaoDAO(String basePath) throws Exception {
         super(basePath, "inscricoes", Inscricao.class);
-        this.byEventoIndex = new LinkedEntityListIndex(basePath + "/indices/inscricoes", "inscricoes_por_evento");
-        this.byParticipanteIndex = new LinkedEntityListIndex(basePath + "/indices/inscricoes", "inscricoes_por_participante");
+        this.byEventoIndex = new LinkedEntityListIndex(
+                basePath + "/indices/inscricoes",
+                "inscricoes_por_evento");
+        this.byParticipanteIndex = new LinkedEntityListIndex(
+                basePath + "/indices/inscricoes",
+                "inscricoes_por_participante");
         rebuildRelationshipIndexesIfNeeded();
     }
 
@@ -40,8 +44,9 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     }
 
     public boolean existsByEventoAndParticipante(int idEvento, int idParticipante, Integer ignoredId) throws Exception {
-        for (Inscricao inscricao : listByEvento(idEvento)) {
-            if (inscricao.getIdParticipante() == idParticipante && (ignoredId == null || inscricao.getId() != ignoredId)) {
+        for (Inscricao i : listByEvento(idEvento)) {
+            if (i.getIdParticipante() == idParticipante
+                    && (ignoredId == null || i.getId() != ignoredId)) {
                 return true;
             }
         }
@@ -54,6 +59,12 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
     public boolean hasParticipante(int idParticipante) throws Exception {
         return !listByParticipante(idParticipante).isEmpty();
+    }
+
+    @Override
+    protected String sortKey(Inscricao i) {
+        // Ordena por data de inscrição
+        return i.getDataInscricao() != null ? i.getDataInscricao() : "";
     }
 
     @Override
@@ -83,27 +94,19 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     private List<Inscricao> collect(Set<Integer> ids, int filterId, boolean filterEvento) throws Exception {
         List<Inscricao> items = new ArrayList<>();
         for (Integer id : ids) {
-            Inscricao inscricao = findById(id);
-            if (inscricao == null) {
-                continue;
-            }
-            if (filterEvento && inscricao.getIdEvento() == filterId) {
-                items.add(inscricao);
-            }
-            if (!filterEvento && inscricao.getIdParticipante() == filterId) {
-                items.add(inscricao);
-            }
+            Inscricao i = findById(id);
+            if (i == null) continue;
+            if (filterEvento  && i.getIdEvento()       == filterId) items.add(i);
+            if (!filterEvento && i.getIdParticipante() == filterId) items.add(i);
         }
         return items;
     }
 
     private void rebuildRelationshipIndexesIfNeeded() throws Exception {
-        if (!byEventoIndex.isEmpty() || !byParticipanteIndex.isEmpty()) {
-            return;
-        }
-        for (Inscricao inscricao : listAll()) {
-            byEventoIndex.add(inscricao.getIdEvento(), inscricao.getId());
-            byParticipanteIndex.add(inscricao.getIdParticipante(), inscricao.getId());
+        if (!byEventoIndex.isEmpty() || !byParticipanteIndex.isEmpty()) return;
+        for (Inscricao i : listAll()) {
+            byEventoIndex.add(i.getIdEvento(), i.getId());
+            byParticipanteIndex.add(i.getIdParticipante(), i.getId());
         }
     }
 }
