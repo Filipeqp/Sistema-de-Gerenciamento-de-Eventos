@@ -27,16 +27,16 @@ public class Servidor {
     private static InscricaoDAO inscricaoDAO;
 
     public static void main(String[] args) throws Exception {
-        eventoDAO       = new EventoDAO(BASE_PATH);
-        palestranteDAO  = new PalestranteDAO(BASE_PATH);
+        eventoDAO = new EventoDAO(BASE_PATH);
+        palestranteDAO = new PalestranteDAO(BASE_PATH);
         participanteDAO = new ParticipanteDAO(BASE_PATH);
-        inscricaoDAO    = new InscricaoDAO(BASE_PATH);
+        inscricaoDAO = new InscricaoDAO(BASE_PATH);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-        server.createContext("/eventos",      Servidor::handleEventos);
+        server.createContext("/eventos", Servidor::handleEventos);
         server.createContext("/palestrantes", Servidor::handlePalestrantes);
-        server.createContext("/participantes",Servidor::handleParticipantes);
-        server.createContext("/inscricoes",   Servidor::handleInscricoes);
+        server.createContext("/participantes", Servidor::handleParticipantes);
+        server.createContext("/inscricoes", Servidor::handleInscricoes);
         server.setExecutor(null);
         server.start();
         System.out.println("Servidor rodando em http://localhost:8080");
@@ -71,7 +71,10 @@ public class Servidor {
 
     private static void handleEventos(HttpExchange ex) throws IOException {
         addCors(ex);
-        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) { ex.sendResponseHeaders(204, -1); return; }
+        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
 
         String[] parts = ex.getRequestURI().getPath().split("/");
         boolean hasId = parts.length == 3 && !parts[2].isEmpty();
@@ -83,14 +86,16 @@ public class Servidor {
                 case "GET":
                     if (hasId) {
                         Evento e = eventoDAO.findById(id);
-                        if (e != null) sendResponse(ex, 200, eventoToJson(e));
-                        else           sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
+                        if (e != null)
+                            sendResponse(ex, 200, eventoToJson(e));
+                        else
+                            sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
                     } else {
                         List<Evento> lista;
-                        // GET /eventos?ordenar=nome&ordem=desc  → B+ decrescente
-                        // GET /eventos?ordenar=nome             → B+ crescente (default)
-                        // GET /eventos?ordenar=externo          → Ordenação externa por intercalação
-                        // GET /eventos                          → listagem sem ordem garantida
+                        // GET /eventos?ordenar=nome&ordem=desc → B+ decrescente
+                        // GET /eventos?ordenar=nome → B+ crescente (default)
+                        // GET /eventos?ordenar=externo → Ordenação externa por intercalação
+                        // GET /eventos → listagem sem ordem garantida
                         if (query != null && query.contains("ordenar=externo")) {
                             lista = eventoDAO.listAllExternalSorted();
                         } else if (query != null && query.contains("ordenar=nome")) {
@@ -105,19 +110,25 @@ public class Servidor {
                 case "POST":
                     Evento novo = eventoFromJson(readBody(ex));
                     Evento criado = eventoDAO.create(novo);
-                    if (criado != null) sendResponse(ex, 201, eventoToJson(criado));
-                    else               sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
+                    if (criado != null)
+                        sendResponse(ex, 201, eventoToJson(criado));
+                    else
+                        sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
                     break;
                 case "PUT":
                     Evento atualizar = eventoFromJson(readBody(ex));
                     atualizar.setId(id);
                     Evento atualizado = eventoDAO.update(id, atualizar);
-                    if (atualizado != null) sendResponse(ex, 200, eventoToJson(atualizado));
-                    else                   sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
+                    if (atualizado != null)
+                        sendResponse(ex, 200, eventoToJson(atualizado));
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
                     break;
                 case "DELETE":
-                    if (eventoDAO.delete(id)) sendResponse(ex, 200, "{\"mensagem\":\"Evento excluido\"}");
-                    else                      sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
+                    if (eventoDAO.delete(id))
+                        sendResponse(ex, 200, "{\"mensagem\":\"Evento excluido\"}");
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Evento nao encontrado\"}");
                     break;
                 default:
                     sendResponse(ex, 405, "{\"erro\":\"Metodo nao permitido\"}");
@@ -131,7 +142,10 @@ public class Servidor {
 
     private static void handlePalestrantes(HttpExchange ex) throws IOException {
         addCors(ex);
-        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) { ex.sendResponseHeaders(204, -1); return; }
+        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
 
         String[] parts = ex.getRequestURI().getPath().split("/");
         boolean hasId = parts.length == 3 && !parts[2].isEmpty();
@@ -143,15 +157,17 @@ public class Servidor {
                 case "GET":
                     if (hasId) {
                         Palestrante p = palestranteDAO.findById(id);
-                        if (p != null) sendResponse(ex, 200, palestranteToJson(p));
-                        else           sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
+                        if (p != null)
+                            sendResponse(ex, 200, palestranteToJson(p));
+                        else
+                            sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
                     } else if (query != null && query.startsWith("idEvento=")) {
-                        // GET /palestrantes?idEvento=X  → usa LinkedEntityListIndex (1:N via índice)
+                        // GET /palestrantes?idEvento=X → usa LinkedEntityListIndex (1:N via índice)
                         int idEvento = Integer.parseInt(query.split("=")[1].split("&")[0]);
                         List<Palestrante> lista = palestranteDAO.listByEvento(idEvento);
                         sendResponse(ex, 200, palestrantesToJson(lista));
                     } else if (query != null && query.contains("ordenar=nome")) {
-                        // GET /palestrantes?ordenar=nome  → B+ crescente
+                        // GET /palestrantes?ordenar=nome → B+ crescente
                         boolean desc = query.contains("ordem=desc");
                         List<Palestrante> lista = desc
                                 ? palestranteDAO.listAllOrderedDesc()
@@ -164,19 +180,25 @@ public class Servidor {
                 case "POST":
                     Palestrante novoPal = palestranteFromJson(readBody(ex));
                     Palestrante criadoPal = palestranteDAO.create(novoPal);
-                    if (criadoPal != null) sendResponse(ex, 201, palestranteToJson(criadoPal));
-                    else                  sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
+                    if (criadoPal != null)
+                        sendResponse(ex, 201, palestranteToJson(criadoPal));
+                    else
+                        sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
                     break;
                 case "PUT":
                     Palestrante atualizarPal = palestranteFromJson(readBody(ex));
                     atualizarPal.setId(id);
                     Palestrante atualizadoPal = palestranteDAO.update(id, atualizarPal);
-                    if (atualizadoPal != null) sendResponse(ex, 200, palestranteToJson(atualizadoPal));
-                    else                      sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
+                    if (atualizadoPal != null)
+                        sendResponse(ex, 200, palestranteToJson(atualizadoPal));
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
                     break;
                 case "DELETE":
-                    if (palestranteDAO.delete(id)) sendResponse(ex, 200, "{\"mensagem\":\"Palestrante excluido\"}");
-                    else                           sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
+                    if (palestranteDAO.delete(id))
+                        sendResponse(ex, 200, "{\"mensagem\":\"Palestrante excluido\"}");
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Palestrante nao encontrado\"}");
                     break;
                 default:
                     sendResponse(ex, 405, "{\"erro\":\"Metodo nao permitido\"}");
@@ -190,7 +212,10 @@ public class Servidor {
 
     private static void handleParticipantes(HttpExchange ex) throws IOException {
         addCors(ex);
-        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) { ex.sendResponseHeaders(204, -1); return; }
+        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
 
         String[] parts = ex.getRequestURI().getPath().split("/");
         boolean hasId = parts.length == 3 && !parts[2].isEmpty();
@@ -202,8 +227,10 @@ public class Servidor {
                 case "GET":
                     if (hasId) {
                         Participante p = participanteDAO.findById(id);
-                        if (p != null) sendResponse(ex, 200, participanteToJson(p));
-                        else           sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
+                        if (p != null)
+                            sendResponse(ex, 200, participanteToJson(p));
+                        else
+                            sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
                     } else if (query != null && query.contains("ordenar=nome")) {
                         boolean desc = query.contains("ordem=desc");
                         List<Participante> lista = desc
@@ -217,19 +244,25 @@ public class Servidor {
                 case "POST":
                     Participante novoPart = participanteFromJson(readBody(ex));
                     Participante criadoPart = participanteDAO.create(novoPart);
-                    if (criadoPart != null) sendResponse(ex, 201, participanteToJson(criadoPart));
-                    else                   sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
+                    if (criadoPart != null)
+                        sendResponse(ex, 201, participanteToJson(criadoPart));
+                    else
+                        sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
                     break;
                 case "PUT":
                     Participante atualizarPart = participanteFromJson(readBody(ex));
                     atualizarPart.setId(id);
                     Participante atualizadoPart = participanteDAO.update(id, atualizarPart);
-                    if (atualizadoPart != null) sendResponse(ex, 200, participanteToJson(atualizadoPart));
-                    else                       sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
+                    if (atualizadoPart != null)
+                        sendResponse(ex, 200, participanteToJson(atualizadoPart));
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
                     break;
                 case "DELETE":
-                    if (participanteDAO.delete(id)) sendResponse(ex, 200, "{\"mensagem\":\"Participante excluido\"}");
-                    else                            sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
+                    if (participanteDAO.delete(id))
+                        sendResponse(ex, 200, "{\"mensagem\":\"Participante excluido\"}");
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Participante nao encontrado\"}");
                     break;
                 default:
                     sendResponse(ex, 405, "{\"erro\":\"Metodo nao permitido\"}");
@@ -243,7 +276,10 @@ public class Servidor {
 
     private static void handleInscricoes(HttpExchange ex) throws IOException {
         addCors(ex);
-        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) { ex.sendResponseHeaders(204, -1); return; }
+        if (ex.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
 
         String[] parts = ex.getRequestURI().getPath().split("/");
         boolean hasId = parts.length == 3 && !parts[2].isEmpty();
@@ -255,8 +291,10 @@ public class Servidor {
                 case "GET":
                     if (hasId) {
                         Inscricao i = inscricaoDAO.findById(id);
-                        if (i != null) sendResponse(ex, 200, inscricaoToJson(i));
-                        else           sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
+                        if (i != null)
+                            sendResponse(ex, 200, inscricaoToJson(i));
+                        else
+                            sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
                     } else if (query != null && query.startsWith("idEvento=")) {
                         int idEvento = Integer.parseInt(query.split("=")[1].split("&")[0]);
                         sendResponse(ex, 200, inscricoesToJson(inscricaoDAO.listByEvento(idEvento)));
@@ -275,19 +313,25 @@ public class Servidor {
                         return;
                     }
                     Inscricao criada = inscricaoDAO.create(nova);
-                    if (criada != null) sendResponse(ex, 201, inscricaoToJson(criada));
-                    else               sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
+                    if (criada != null)
+                        sendResponse(ex, 201, inscricaoToJson(criada));
+                    else
+                        sendResponse(ex, 500, "{\"erro\":\"Erro ao incluir\"}");
                     break;
                 case "PUT":
                     Inscricao atualizarInsc = inscricaoFromJson(readBody(ex));
                     atualizarInsc.setId(id);
                     Inscricao atualizadaInsc = inscricaoDAO.update(id, atualizarInsc);
-                    if (atualizadaInsc != null) sendResponse(ex, 200, inscricaoToJson(atualizadaInsc));
-                    else                       sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
+                    if (atualizadaInsc != null)
+                        sendResponse(ex, 200, inscricaoToJson(atualizadaInsc));
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
                     break;
                 case "DELETE":
-                    if (inscricaoDAO.delete(id)) sendResponse(ex, 200, "{\"mensagem\":\"Inscricao cancelada\"}");
-                    else                         sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
+                    if (inscricaoDAO.delete(id))
+                        sendResponse(ex, 200, "{\"mensagem\":\"Inscricao cancelada\"}");
+                    else
+                        sendResponse(ex, 404, "{\"erro\":\"Inscricao nao encontrada\"}");
                     break;
                 default:
                     sendResponse(ex, 405, "{\"erro\":\"Metodo nao permitido\"}");
@@ -301,18 +345,19 @@ public class Servidor {
 
     private static String eventoToJson(Evento e) {
         return "{\"id\":" + e.getId()
-                + ",\"nome\":\""        + escape(e.getNome())       + "\""
-                + ",\"descricao\":\""   + escape(e.getDescricao())  + "\""
-                + ",\"dataEvento\":\"" + escape(e.getDataEvento())  + "\""
-                + ",\"preco\":"         + e.getPreco()
-                + ",\"tags\":\""        + escape(e.getTags())       + "\"}";
+                + ",\"nome\":\"" + escape(e.getNome()) + "\""
+                + ",\"descricao\":\"" + escape(e.getDescricao()) + "\""
+                + ",\"dataEvento\":\"" + escape(e.getDataEvento()) + "\""
+                + ",\"preco\":" + e.getPreco()
+                + ",\"tags\":\"" + escape(e.getTags()) + "\"}";
     }
 
     private static String eventosToJson(List<Evento> lista) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             sb.append(eventoToJson(lista.get(i)));
-            if (i < lista.size() - 1) sb.append(",");
+            if (i < lista.size() - 1)
+                sb.append(",");
         }
         return sb.append("]").toString();
     }
@@ -328,17 +373,18 @@ public class Servidor {
 
     private static String palestranteToJson(Palestrante p) {
         return "{\"id\":" + p.getId()
-                + ",\"nome\":\""            + escape(p.getNome())           + "\""
-                + ",\"miniCurriculo\":\""   + escape(p.getMiniCurriculo())  + "\""
-                + ",\"especialidades\":\""  + escape(p.getEspecialidades()) + "\""
-                + ",\"idEvento\":"           + p.getIdEvento()              + "}";
+                + ",\"nome\":\"" + escape(p.getNome()) + "\""
+                + ",\"miniCurriculo\":\"" + escape(p.getMiniCurriculo()) + "\""
+                + ",\"especialidades\":\"" + escape(p.getEspecialidades()) + "\""
+                + ",\"idEvento\":" + p.getIdEvento() + "}";
     }
 
     private static String palestrantesToJson(List<Palestrante> lista) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             sb.append(palestranteToJson(lista.get(i)));
-            if (i < lista.size() - 1) sb.append(",");
+            if (i < lista.size() - 1)
+                sb.append(",");
         }
         return sb.append("]").toString();
     }
@@ -353,16 +399,17 @@ public class Servidor {
 
     private static String participanteToJson(Participante p) {
         return "{\"id\":" + p.getId()
-                + ",\"nome\":\""        + escape(p.getNome())       + "\""
-                + ",\"email\":\""       + escape(p.getEmail())      + "\""
-                + ",\"interesses\":\"" + escape(p.getInteresses())  + "\"}";
+                + ",\"nome\":\"" + escape(p.getNome()) + "\""
+                + ",\"email\":\"" + escape(p.getEmail()) + "\""
+                + ",\"interesses\":\"" + escape(p.getInteresses()) + "\"}";
     }
 
     private static String participantesToJson(List<Participante> lista) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             sb.append(participanteToJson(lista.get(i)));
-            if (i < lista.size() - 1) sb.append(",");
+            if (i < lista.size() - 1)
+                sb.append(",");
         }
         return sb.append("]").toString();
     }
@@ -376,8 +423,8 @@ public class Servidor {
 
     private static String inscricaoToJson(Inscricao i) {
         return "{\"id\":" + i.getId()
-                + ",\"idEvento\":"          + i.getIdEvento()
-                + ",\"idParticipante\":"    + i.getIdParticipante()
+                + ",\"idEvento\":" + i.getIdEvento()
+                + ",\"idParticipante\":" + i.getIdParticipante()
                 + ",\"dataInscricao\":\"" + escape(i.getDataInscricao()) + "\"}";
     }
 
@@ -385,7 +432,8 @@ public class Servidor {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < lista.size(); i++) {
             sb.append(inscricaoToJson(lista.get(i)));
-            if (i < lista.size() - 1) sb.append(",");
+            if (i < lista.size() - 1)
+                sb.append(",");
         }
         return sb.append("]").toString();
     }
@@ -400,7 +448,8 @@ public class Servidor {
     private static String extractString(String json, String key) {
         String search = "\"" + key + "\":\"";
         int start = json.indexOf(search);
-        if (start == -1) return "";
+        if (start == -1)
+            return "";
         start += search.length();
         int end = json.indexOf("\"", start);
         return end == -1 ? "" : json.substring(start, end);
@@ -409,15 +458,18 @@ public class Servidor {
     private static String extractValue(String json, String key) {
         String search = "\"" + key + "\":";
         int start = json.indexOf(search);
-        if (start == -1) return "0";
+        if (start == -1)
+            return "0";
         start += search.length();
         int end = json.indexOf(",", start);
-        if (end == -1) end = json.indexOf("}", start);
+        if (end == -1)
+            end = json.indexOf("}", start);
         return end == -1 ? "0" : json.substring(start, end).trim().replace("\"", "");
     }
 
     private static String escape(String s) {
-        if (s == null) return "";
+        if (s == null)
+            return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r");
     }
