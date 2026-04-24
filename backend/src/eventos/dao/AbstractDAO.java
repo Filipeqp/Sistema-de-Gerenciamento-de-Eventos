@@ -60,6 +60,17 @@ public abstract class AbstractDAO<T extends Record> {
 
     public List<T> listAll() throws Exception {
         List<T> items = new ArrayList<>();
+        List<Integer> ids = primaryIndex.listKeys();
+        if (!ids.isEmpty()) {
+            for (int id : ids) {
+                T record = findById(id);
+                if (record != null) {
+                    items.add(record);
+                }
+            }
+            return items;
+        }
+
         for (RecordEnvelope<T> envelope : dataFile.scanActive()) {
             items.add(envelope.getRecord());
         }
@@ -197,6 +208,16 @@ public abstract class AbstractDAO<T extends Record> {
         boolean treeEmpty = sortIndex.isEmpty();
 
         if (!hashEmpty && !treeEmpty) return;
+
+        if (!hashEmpty) {
+            for (int id : primaryIndex.listKeys()) {
+                T record = findById(id);
+                if (record != null && treeEmpty) {
+                    sortIndex.insert(sortKey(record), record.getId());
+                }
+            }
+            return;
+        }
 
         for (RecordEnvelope<T> envelope : dataFile.scanActive()) {
             T record = envelope.getRecord();

@@ -14,6 +14,9 @@ public class BinaryRecordFile<T extends Record> {
     private static final byte ACTIVE = ' ';
     private static final byte DELETED = '*';
     private static final int HEADER_SIZE = 12;
+    private static final int RECORD_HEADER_SIZE = 5;
+    private static final int FREE_SLOT_POINTER_SIZE = 8;
+    private static final byte[] ZERO_BUFFER = new byte[1024];
 
     private final RandomAccessFile file;
     private final Constructor<T> constructor;
@@ -45,12 +48,14 @@ public class BinaryRecordFile<T extends Record> {
 
     public synchronized long create(T record) throws Exception {
         byte[] data = record.toByteArray();
-        long reused = takeFreeSlot(data.length);
-        long position = reused >= 0 ? reused : file.length();
-        file.seek(position);
-        file.writeByte(ACTIVE);
-        file.writeInt(data.length);
-        file.write(data);
+        FreeSlot reused = takeFreeSlot(data.length);
+        if (reused != null) {
+            writeRecord(reused.position, reused.length, data);
+            return reused.position;
+        }
+
+        long position = file.length();
+        writeRecord(position, data.length, data);
         return position;
     }
 
@@ -61,7 +66,7 @@ public class BinaryRecordFile<T extends Record> {
         file.seek(position);
         byte tombstone = file.readByte();
         int size = file.readInt();
-        if (size < 0 || position + 5L + size > file.length()) {
+        if (size < 0 || position + RECORD_HEADER_SIZE + size > file.length()) {
             return null;
         }
         byte[] data = new byte[size];
@@ -84,6 +89,13 @@ public class BinaryRecordFile<T extends Record> {
         int size = file.readInt();
         if (tombstone != ACTIVE || size < 0) {
             return false;
+        }
+
+        if (size < FREE_SLOT_POINTER_SIZE) {
+            file.seek(position);
+            file.writeByte(DELETED);
+            file.writeInt(size);
+            return true;
         }
 
         file.seek(4);
@@ -113,13 +125,7 @@ public class BinaryRecordFile<T extends Record> {
         }
 
         if (newData.length <= currentSize) {
-            file.seek(position);
-            file.writeByte(ACTIVE);
-            file.writeInt(currentSize);
-            file.write(newData);
-            if (newData.length < currentSize) {
-                file.write(new byte[currentSize - newData.length]);
-            }
+            writeRecord(position, currentSize, newData);
             return position;
         }
 
@@ -130,22 +136,28 @@ public class BinaryRecordFile<T extends Record> {
     public synchronized List<RecordEnvelope<T>> scanActive() throws Exception {
         List<RecordEnvelope<T>> records = new ArrayList<>();
         file.seek(HEADER_SIZE);
-        while (file.getFilePointer() < file.length()) {
+        while (file.getFilePointer() + RECORD_HEADER_SIZE <= file.length()) {
             long position = file.getFilePointer();
             byte tombstone = file.readByte();
             int size = file.readInt();
-            if (size < 0 || position + 5L + size > file.length()) {
+            if (size < 0 || position + RECORD_HEADER_SIZE + size > file.length()) {
                 // Defensive resync: if one record is malformed, keep scanning so valid
                 // records later in the file are still visible to the application.
                 file.seek(position + 1L);
                 continue;
             }
-            byte[] data = new byte[size];
-            file.readFully(data);
-            if (tombstone == ACTIVE) {
-                T record = constructor.newInstance();
-                record.fromByteArray(data);
-                records.add(new RecordEnvelope<>(position, record));
+
+            try {
+                byte[] data = new byte[size];
+                file.readFully(data);
+                if (tombstone == ACTIVE) {
+                    T record = constructor.newInstance();
+                    record.fromByteArray(data);
+                    records.add(new RecordEnvelope<>(position, record));
+                }
+            } catch (Exception e) {
+                // Defensive resync for partially corrupted payloads.
+                file.seek(position + 1L);
             }
         }
         return records;
@@ -155,7 +167,7 @@ public class BinaryRecordFile<T extends Record> {
         file.close();
     }
 
-    private long takeFreeSlot(int requiredLength) throws IOException {
+    private FreeSlot takeFreeSlot(int requiredLength) throws IOException {
         file.seek(4);
         long head = file.readLong();
         long previous = -1L;
@@ -173,12 +185,38 @@ public class BinaryRecordFile<T extends Record> {
                     file.seek(previous + 5L);
                     file.writeLong(next);
                 }
-                return head;
+                return new FreeSlot(head, size);
             }
             previous = head;
             head = next;
         }
 
-        return -1L;
+        return null;
+    }
+
+    private void writeRecord(long position, int storedLength, byte[] data) throws IOException {
+        file.seek(position);
+        file.writeByte(ACTIVE);
+        file.writeInt(storedLength);
+        file.write(data);
+        writePadding(storedLength - data.length);
+    }
+
+    private void writePadding(int remaining) throws IOException {
+        while (remaining > 0) {
+            int chunk = Math.min(remaining, ZERO_BUFFER.length);
+            file.write(ZERO_BUFFER, 0, chunk);
+            remaining -= chunk;
+        }
+    }
+
+    private static class FreeSlot {
+        private final long position;
+        private final int length;
+
+        private FreeSlot(long position, int length) {
+            this.position = position;
+            this.length = length;
+        }
     }
 }

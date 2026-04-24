@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ExtensibleHashIndex {
 
@@ -89,6 +92,28 @@ public class ExtensibleHashIndex {
             }
         }
         return true;
+    }
+
+    public synchronized List<Integer> listKeys() throws IOException {
+        int globalDepth = readGlobalDepth();
+        int size = 1 << globalDepth;
+        Set<Long> visitedBuckets = new HashSet<>();
+        List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < size; i++) {
+            long bucketOffset = readDirectoryEntry(i);
+            if (!visitedBuckets.add(bucketOffset)) {
+                continue;
+            }
+
+            Bucket bucket = readBucket(bucketOffset);
+            for (Entry entry : bucket.entries) {
+                keys.add(entry.key);
+            }
+        }
+
+        Collections.sort(keys);
+        return keys;
     }
 
     public synchronized void close() throws IOException {
