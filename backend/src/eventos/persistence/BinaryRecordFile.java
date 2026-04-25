@@ -15,7 +15,6 @@ public class BinaryRecordFile<T extends Record> {
     private static final byte DELETED = '*';
     private static final int HEADER_SIZE = 12;
     private static final int RECORD_HEADER_SIZE = 5;
-    private static final int FREE_SLOT_POINTER_SIZE = 8;
     private static final byte[] ZERO_BUFFER = new byte[1024];
 
     private final RandomAccessFile file;
@@ -87,27 +86,16 @@ public class BinaryRecordFile<T extends Record> {
         file.seek(position);
         byte tombstone = file.readByte();
         int size = file.readInt();
-        if (tombstone != ACTIVE || size < 0) {
+        if (tombstone != ACTIVE || size < 0 || position + RECORD_HEADER_SIZE + size > file.length()) {
             return false;
         }
 
-        if (size < FREE_SLOT_POINTER_SIZE) {
-            file.seek(position);
-            file.writeByte(DELETED);
-            file.writeInt(size);
-            return true;
-        }
-
-        file.seek(4);
-        long currentHead = file.readLong();
-
+        // The record address stored in the index points to the tombstone byte.
+        // Record layout in this file is:
+        //   [tombstone:1][payload length:4][payload...]
+        // So the logical delete must overwrite exactly one byte at `position`.
         file.seek(position);
         file.writeByte(DELETED);
-        file.writeInt(size);
-        file.writeLong(currentHead);
-
-        file.seek(4);
-        file.writeLong(position);
         return true;
     }
 
@@ -168,27 +156,23 @@ public class BinaryRecordFile<T extends Record> {
     }
 
     private FreeSlot takeFreeSlot(int requiredLength) throws IOException {
-        file.seek(4);
-        long head = file.readLong();
-        long previous = -1L;
+        long position = HEADER_SIZE;
 
-        while (head != -1L) {
-            file.seek(head);
+        while (position + RECORD_HEADER_SIZE <= file.length()) {
+            file.seek(position);
             byte tombstone = file.readByte();
             int size = file.readInt();
-            long next = file.readLong();
-            if (tombstone == DELETED && size >= requiredLength) {
-                if (previous == -1L) {
-                    file.seek(4);
-                    file.writeLong(next);
-                } else {
-                    file.seek(previous + 5L);
-                    file.writeLong(next);
-                }
-                return new FreeSlot(head, size);
+
+            if (size < 0 || position + RECORD_HEADER_SIZE + size > file.length()) {
+                position++;
+                continue;
             }
-            previous = head;
-            head = next;
+
+            if (tombstone == DELETED && size >= requiredLength) {
+                return new FreeSlot(position, size);
+            }
+
+            position += RECORD_HEADER_SIZE + size;
         }
 
         return null;

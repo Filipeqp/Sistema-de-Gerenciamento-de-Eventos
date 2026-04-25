@@ -6,10 +6,14 @@ import eventos.dao.ParticipanteDAO;
 import eventos.model.Evento;
 import eventos.model.Palestrante;
 import eventos.model.Participante;
+import eventos.persistence.BinaryRecordFile;
 import eventos.util.ApiResponse;
 
+import java.io.RandomAccessFile;
+import java.lang.reflect.Constructor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 public class RegressionSmokeTest {
@@ -19,6 +23,8 @@ public class RegressionSmokeTest {
         String basePath = baseDir.toAbsolutePath().toString().replace('\\', '/');
 
         System.out.println("Usando base temporaria: " + basePath);
+
+        validateLogicalDeleteDoesNotRewritePayload(baseDir, basePath);
 
         EventoDAO eventoDAO = new EventoDAO(basePath);
         PalestranteDAO palestranteDAO = new PalestranteDAO(basePath);
@@ -91,6 +97,56 @@ public class RegressionSmokeTest {
         ApiResponse excluido = eventoController.delete(evento.getId());
         assertEquals(200, excluido.getStatus(), "Evento deveria ser excluido apos remover todos os palestrantes");
         System.out.println("Fluxo de exclusao de evento validado com sucesso.");
+    }
+
+    private static void validateLogicalDeleteDoesNotRewritePayload(Path baseDir, String basePath) throws Exception {
+        Constructor<Evento> constructor = Evento.class.getConstructor();
+        BinaryRecordFile<Evento> rawFile = new BinaryRecordFile<>(
+                basePath + "/dados/delete-check",
+                "delete_check",
+                constructor);
+
+        try {
+            Evento evento = new Evento("AEDS3", "Descricao", "2026-04-25", 42.0f, "persistencia");
+            evento.setId(rawFile.nextId());
+            long position = rawFile.create(evento);
+
+            Path dbPath = baseDir.resolve("dados").resolve("delete-check").resolve("delete_check.db");
+            byte[] beforePayload;
+            byte beforeTombstone;
+            int beforeSize;
+
+            try (RandomAccessFile raf = new RandomAccessFile(dbPath.toFile(), "r")) {
+                raf.seek(position);
+                beforeTombstone = raf.readByte();
+                beforeSize = raf.readInt();
+                beforePayload = new byte[beforeSize];
+                raf.readFully(beforePayload);
+            }
+
+            if (!rawFile.delete(position)) {
+                throw new IllegalStateException("Exclusao logica nao conseguiu marcar o registro de teste");
+            }
+
+            try (RandomAccessFile raf = new RandomAccessFile(dbPath.toFile(), "r")) {
+                raf.seek(position);
+                byte afterTombstone = raf.readByte();
+                int afterSize = raf.readInt();
+                byte[] afterPayload = new byte[afterSize];
+                raf.readFully(afterPayload);
+
+                assertEquals(' ', beforeTombstone, "Registro de teste deveria iniciar ativo");
+                assertEquals('*', afterTombstone, "Lapide deveria ser a unica alteracao do delete");
+                assertEquals(beforeSize, afterSize, "Delete nao deve alterar o tamanho armazenado");
+                if (!Arrays.equals(beforePayload, afterPayload)) {
+                    throw new IllegalStateException("Payload do registro foi alterado durante a exclusao logica");
+                }
+            }
+
+            System.out.println("Delete logico preservou o payload do registro.");
+        } finally {
+            rawFile.close();
+        }
     }
 
     private static void assertEquals(int expected, int actual, String message) {
