@@ -139,6 +139,8 @@ http://localhost:5173
 ## Endpoints
 
 - `GET /eventos`
+- `GET /eventos?ordenacao=bplus&direcao=asc`
+- `GET /eventos?ordenacao=bplus&direcao=desc`
 - `GET /eventos/{id}`
 - `POST /eventos`
 - `PUT /eventos/{id}`
@@ -149,6 +151,7 @@ http://localhost:5173
 - `GET /inscricoes`
 - `GET /inscricoes?idEvento={idEvento}`
 - `GET /inscricoes?idParticipante={idParticipante}`
+- `GET /inscricoes?ordenacao=bplus&direcao=asc`
 
 ## Documentacao
 
@@ -159,6 +162,7 @@ Os arquivos em `docs/` incluem:
 - `arquitetura.md`
 - `hash-extensivel.md`
 - `persistencia.md`
+- `fase-3.md`
 
 ## Observacoes
 

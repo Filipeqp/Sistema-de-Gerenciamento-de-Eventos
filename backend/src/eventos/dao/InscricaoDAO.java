@@ -43,6 +43,14 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
         return collect(byParticipanteIndex.list(idParticipante), idParticipante, false);
     }
 
+    public List<Inscricao> listByEventoOrdered(int idEvento, boolean descending) throws Exception {
+        return filterOrdered(idEvento, true, descending);
+    }
+
+    public List<Inscricao> listByParticipanteOrdered(int idParticipante, boolean descending) throws Exception {
+        return filterOrdered(idParticipante, false, descending);
+    }
+
     public boolean existsByEventoAndParticipante(int idEvento, int idParticipante, Integer ignoredId) throws Exception {
         for (Inscricao i : listByEvento(idEvento)) {
             if (i.getIdParticipante() == idParticipante
@@ -98,6 +106,20 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
             if (i == null) continue;
             if (filterEvento  && i.getIdEvento()       == filterId) items.add(i);
             if (!filterEvento && i.getIdParticipante() == filterId) items.add(i);
+        }
+        return items;
+    }
+
+    private List<Inscricao> filterOrdered(int filterId, boolean filterEvento, boolean descending) throws Exception {
+        List<Inscricao> source = descending ? listAllOrderedDesc() : listAllOrdered();
+        List<Inscricao> items = new ArrayList<>();
+        for (Inscricao i : source) {
+            if (filterEvento && i.getIdEvento() == filterId) {
+                items.add(i);
+            }
+            if (!filterEvento && i.getIdParticipante() == filterId) {
+                items.add(i);
+            }
         }
         return items;
     }

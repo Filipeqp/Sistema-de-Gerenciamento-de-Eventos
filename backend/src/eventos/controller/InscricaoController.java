@@ -6,6 +6,7 @@ import eventos.dao.ParticipanteDAO;
 import eventos.model.Inscricao;
 import eventos.util.ApiResponse;
 import eventos.util.JsonUtil;
+import eventos.util.QueryParams;
 import eventos.util.ValidationException;
 
 import java.util.ArrayList;
@@ -25,19 +26,31 @@ public class InscricaoController {
     }
 
     public ApiResponse list(String query) throws Exception {
+        Map<String, String> params = QueryParams.parse(query);
+        boolean bplus = QueryParams.isBPlusOrdering(params);
+        boolean desc = QueryParams.isDescending(params);
         List<Map<String, Object>> items = new ArrayList<>();
-        if (query != null && query.startsWith("idEvento=")) {
-            int idEvento = Integer.parseInt(query.substring("idEvento=".length()));
-            for (Inscricao inscricao : inscricaoDAO.listByEvento(idEvento)) {
+        int idEvento = QueryParams.getInt(params, "idEvento", -1);
+        int idParticipante = QueryParams.getInt(params, "idParticipante", -1);
+        if (idEvento > 0) {
+            List<Inscricao> inscricoes = bplus
+                    ? inscricaoDAO.listByEventoOrdered(idEvento, desc)
+                    : inscricaoDAO.listByEvento(idEvento);
+            for (Inscricao inscricao : inscricoes) {
                 items.add(inscricao.toMap());
             }
-        } else if (query != null && query.startsWith("idParticipante=")) {
-            int idParticipante = Integer.parseInt(query.substring("idParticipante=".length()));
-            for (Inscricao inscricao : inscricaoDAO.listByParticipante(idParticipante)) {
+        } else if (idParticipante > 0) {
+            List<Inscricao> inscricoes = bplus
+                    ? inscricaoDAO.listByParticipanteOrdered(idParticipante, desc)
+                    : inscricaoDAO.listByParticipante(idParticipante);
+            for (Inscricao inscricao : inscricoes) {
                 items.add(inscricao.toMap());
             }
         } else {
-            for (Inscricao inscricao : inscricaoDAO.listAll()) {
+            List<Inscricao> inscricoes = bplus
+                    ? (desc ? inscricaoDAO.listAllOrderedDesc() : inscricaoDAO.listAllOrdered())
+                    : inscricaoDAO.listAll();
+            for (Inscricao inscricao : inscricoes) {
                 items.add(inscricao.toMap());
             }
         }

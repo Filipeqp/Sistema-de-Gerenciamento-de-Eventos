@@ -40,16 +40,17 @@ export default function Eventos() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [busca, setBusca] = useState('');
+  const [direcaoBPlus, setDirecaoBPlus] = useState('asc');
 
   const toast_ = (msg, type = 'success') => setToast({ msg, type });
 
   useEffect(() => {
-    carregar();
-  }, []);
+    carregar(direcaoBPlus);
+  }, [direcaoBPlus]);
 
-  const carregar = async () => {
+  const carregar = async (direcao = direcaoBPlus) => {
     try {
-      const res = await eventoAPI.listar();
+      const res = await eventoAPI.listar({ ordenacao: 'bplus', direcao });
       setLista(Array.isArray(res.data) ? res.data.map(normalizarEvento) : []);
     } catch (err) {
       const msg = err.response?.data?.erro || 'Erro ao carregar eventos';
@@ -142,6 +143,10 @@ export default function Eventos() {
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
+        <select className="form-select" style={{maxWidth:'260px'}} value={direcaoBPlus} onChange={(e) => setDirecaoBPlus(e.target.value)}>
+          <option value="asc">Nome crescente (B+)</option>
+          <option value="desc">Nome decrescente (B+)</option>
+        </select>
       </div>
 
       {loading ? (

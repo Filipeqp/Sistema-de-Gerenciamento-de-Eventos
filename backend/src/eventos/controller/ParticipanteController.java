@@ -5,6 +5,7 @@ import eventos.dao.ParticipanteDAO;
 import eventos.model.Participante;
 import eventos.util.ApiResponse;
 import eventos.util.JsonUtil;
+import eventos.util.QueryParams;
 import eventos.util.ValidationException;
 
 import java.util.ArrayList;
@@ -21,9 +22,13 @@ public class ParticipanteController {
         this.inscricaoDAO = inscricaoDAO;
     }
 
-    public ApiResponse list() throws Exception {
+    public ApiResponse list(String query) throws Exception {
+        Map<String, String> params = QueryParams.parse(query);
         List<Map<String, Object>> items = new ArrayList<>();
-        for (Participante participante : participanteDAO.listAll()) {
+        List<Participante> participantes = QueryParams.isBPlusOrdering(params)
+                ? (QueryParams.isDescending(params) ? participanteDAO.listAllOrderedDesc() : participanteDAO.listAllOrdered())
+                : participanteDAO.listAll();
+        for (Participante participante : participantes) {
             items.add(participante.toMap());
         }
         return new ApiResponse(200, JsonUtil.stringify(items));

@@ -47,12 +47,16 @@ public class PalestranteDAO extends AbstractDAO<Palestrante> {
     }
 
     /**
-     * Lista palestrantes de um evento em ordem de nome (usa B+ + filtro).
+     * Lista palestrantes de um evento em ordem de nome usando a travessia da B+.
      */
     public List<Palestrante> listByEventoOrdered(int idEvento) throws Exception {
-        List<Palestrante> all = listByEvento(idEvento);
-        all.sort((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()));
-        return all;
+        List<Palestrante> items = new ArrayList<>();
+        for (Palestrante p : listAllOrdered()) {
+            if (p.getIdEvento() == idEvento) {
+                items.add(p);
+            }
+        }
+        return items;
     }
 
     @Override

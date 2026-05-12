@@ -4,6 +4,7 @@ import eventos.dao.InscricaoDAO;
 import eventos.dao.PalestranteDAO;
 import eventos.dao.ParticipanteDAO;
 import eventos.model.Evento;
+import eventos.model.Inscricao;
 import eventos.model.Palestrante;
 import eventos.model.Participante;
 import eventos.persistence.BinaryRecordFile;
@@ -38,6 +39,12 @@ public class RegressionSmokeTest {
                 "2026-04-24",
                 10.0f,
                 "teste"));
+        Evento workshop = eventoDAO.create(new Evento(
+                "Workshop BPlus",
+                "Segundo evento para validar listagem ordenada",
+                "2026-04-25",
+                0.0f,
+                "indice,bplus"));
 
         palestranteDAO.create(new Palestrante(
                 "Palestrante Muito Grande",
@@ -78,7 +85,7 @@ public class RegressionSmokeTest {
                 "dados"));
 
         participanteDAO.delete(1);
-        participanteDAO.create(new Participante(
+        Participante participanteCurto = participanteDAO.create(new Participante(
                 "Curto",
                 "curto@example.com",
                 ""));
@@ -90,12 +97,25 @@ public class RegressionSmokeTest {
             System.out.println(" - " + participante.getId() + ": " + participante.getNome());
         }
 
+        Inscricao inscricao1 = inscricaoDAO.create(new Inscricao(evento.getId(), participanteCurto.getId(), "2026-04-20"));
+        Inscricao inscricao2 = inscricaoDAO.create(new Inscricao(workshop.getId(), participanteCurto.getId(), "2026-04-18"));
+        assertEquals(1, inscricaoDAO.listByEvento(evento.getId()).size(), "Indice N:N por evento ficou inconsistente");
+        assertEquals(2, inscricaoDAO.listByParticipante(participanteCurto.getId()).size(), "Indice N:N por participante ficou inconsistente");
+        List<Inscricao> inscricoesOrdenadas = inscricaoDAO.listAllOrdered();
+        assertEquals(inscricao2.getId(), inscricoesOrdenadas.get(0).getId(), "Arvore B+ deveria ordenar inscricoes pela data");
+        assertEquals(inscricao1.getId(), inscricoesOrdenadas.get(1).getId(), "Arvore B+ deveria manter a segunda inscricao por data");
+        System.out.println("Relacionamento N:N Evento-Participante via Inscricao validado com indices nos dois sentidos.");
+
+        inscricaoDAO.delete(inscricao1.getId());
+        inscricaoDAO.delete(inscricao2.getId());
+
         palestranteDAO.delete(2);
         palestranteDAO.delete(3);
         assertEquals(0, palestranteDAO.listByEvento(evento.getId()).size(), "Evento ainda reporta palestrantes apos excluir todos");
 
         ApiResponse excluido = eventoController.delete(evento.getId());
         assertEquals(200, excluido.getStatus(), "Evento deveria ser excluido apos remover todos os palestrantes");
+        assertEquals(200, eventoController.delete(workshop.getId()).getStatus(), "Segundo evento deveria ser excluido sem inscricoes ativas");
         System.out.println("Fluxo de exclusao de evento validado com sucesso.");
     }
 

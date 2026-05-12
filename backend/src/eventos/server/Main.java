@@ -56,7 +56,7 @@ public class Main {
             int id = extractId(exchange);
             switch (exchange.getRequestMethod().toUpperCase()) {
                 case "GET":
-                    return id > 0 ? eventoController.get(id) : eventoController.list();
+                    return id > 0 ? eventoController.get(id) : eventoController.list(exchange.getRequestURI().getQuery());
                 case "POST":
                     return eventoController.create(readBody(exchange));
                 case "PUT":
@@ -92,7 +92,7 @@ public class Main {
             int id = extractId(exchange);
             switch (exchange.getRequestMethod().toUpperCase()) {
                 case "GET":
-                    return id > 0 ? participanteController.get(id) : participanteController.list();
+                    return id > 0 ? participanteController.get(id) : participanteController.list(exchange.getRequestURI().getQuery());
                 case "POST":
                     return participanteController.create(readBody(exchange));
                 case "PUT":

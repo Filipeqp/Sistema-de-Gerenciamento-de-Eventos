@@ -5,6 +5,7 @@ import eventos.dao.PalestranteDAO;
 import eventos.model.Palestrante;
 import eventos.util.ApiResponse;
 import eventos.util.JsonUtil;
+import eventos.util.QueryParams;
 import eventos.util.ValidationException;
 
 import java.util.ArrayList;
@@ -22,14 +23,24 @@ public class PalestranteController {
     }
 
     public ApiResponse list(String query) throws Exception {
+        Map<String, String> params = QueryParams.parse(query);
         List<Map<String, Object>> items = new ArrayList<>();
-        if (query != null && query.startsWith("idEvento=")) {
-            int idEvento = Integer.parseInt(query.substring("idEvento=".length()));
-            for (Palestrante palestrante : palestranteDAO.listByEvento(idEvento)) {
+        int idEvento = QueryParams.getInt(params, "idEvento", -1);
+        if (idEvento > 0) {
+            List<Palestrante> palestrantes = QueryParams.isBPlusOrdering(params)
+                    ? palestranteDAO.listByEventoOrdered(idEvento)
+                    : palestranteDAO.listByEvento(idEvento);
+            if (QueryParams.isDescending(params)) {
+                palestrantes.sort((a, b) -> b.getNome().compareToIgnoreCase(a.getNome()));
+            }
+            for (Palestrante palestrante : palestrantes) {
                 items.add(palestrante.toMap());
             }
         } else {
-            for (Palestrante palestrante : palestranteDAO.listAll()) {
+            List<Palestrante> palestrantes = QueryParams.isBPlusOrdering(params)
+                    ? (QueryParams.isDescending(params) ? palestranteDAO.listAllOrderedDesc() : palestranteDAO.listAllOrdered())
+                    : palestranteDAO.listAll();
+            for (Palestrante palestrante : palestrantes) {
                 items.add(palestrante.toMap());
             }
         }

@@ -25,16 +25,28 @@ export default function Inscricoes() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [filtroEvento, setFiltroEvento] = useState('');
+  const [filtroParticipante, setFiltroParticipante] = useState('');
+  const [direcaoBPlus, setDirecaoBPlus] = useState('asc');
 
   const toast_ = (msg, type = 'success') => setToast({ msg, type });
 
-  useEffect(() => { carregar(); carregarRefs(); }, []);
+  useEffect(() => { carregarRefs(); }, []);
 
   const carregar = async () => {
-    try { const res = await inscricaoAPI.listar(); setLista(res.data); }
+    try {
+      const params = { ordenacao: 'bplus', direcao: direcaoBPlus };
+      const res = filtroEvento
+        ? await inscricaoAPI.listarPorEvento(filtroEvento, params)
+        : filtroParticipante
+          ? await inscricaoAPI.listarPorParticipante(filtroParticipante, params)
+          : await inscricaoAPI.listar(params);
+      setLista(res.data);
+    }
     catch { toast_('Erro ao carregar', 'error'); }
     setLoading(false);
   };
+
+  useEffect(() => { carregar(); }, [filtroEvento, filtroParticipante, direcaoBPlus]);
 
   const carregarRefs = async () => {
     try {
@@ -71,7 +83,10 @@ export default function Inscricoes() {
     catch { toast_('Erro ao cancelar', 'error'); }
   };
 
-  const filtrado = lista.filter(i => filtroEvento === '' || i.idEvento === parseInt(filtroEvento));
+  const filtrado = lista.filter(i =>
+    (filtroEvento === '' || i.idEvento === parseInt(filtroEvento)) &&
+    (filtroParticipante === '' || i.idParticipante === parseInt(filtroParticipante))
+  );
 
   return (
     <div>
@@ -84,6 +99,14 @@ export default function Inscricoes() {
         <select className="form-select" style={{maxWidth:'280px'}} value={filtroEvento} onChange={e => setFiltroEvento(e.target.value)}>
           <option value="">Todos os eventos</option>
           {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nome}</option>)}
+        </select>
+        <select className="form-select" style={{maxWidth:'280px'}} value={filtroParticipante} onChange={e => setFiltroParticipante(e.target.value)}>
+          <option value="">Todos os participantes</option>
+          {participantes.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+        </select>
+        <select className="form-select" style={{maxWidth:'280px'}} value={direcaoBPlus} onChange={e => setDirecaoBPlus(e.target.value)}>
+          <option value="asc">Data crescente (B+)</option>
+          <option value="desc">Data decrescente (B+)</option>
         </select>
       </div>
 
