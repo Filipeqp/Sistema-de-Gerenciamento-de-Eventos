@@ -33,6 +33,8 @@ export default function InscricoesPage() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [filtroEvento, setFiltroEvento] = useState('');
+  const [buscaParticipante, setBuscaParticipante] = useState('');
+  const [direcaoBPlus, setDirecaoBPlus] = useState('asc');
 
   const toast_ = (msg, type = 'success') => setToast({ msg, type });
 
@@ -41,9 +43,13 @@ export default function InscricoesPage() {
     carregarRefs();
   }, []);
 
+  useEffect(() => {
+    carregar();
+  }, [direcaoBPlus]);
+
   const carregar = async () => {
     try {
-      const res = await inscricaoAPI.listar();
+      const res = await inscricaoAPI.listar({ ordenacao: 'bplus', direcao: direcaoBPlus });
       setLista(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       toast_(err.response?.data?.erro || 'Erro ao carregar inscricoes', 'error');
@@ -112,7 +118,13 @@ export default function InscricoesPage() {
     }
   };
 
-  const filtrado = lista.filter((inscricao) => filtroEvento === '' || inscricao.idEvento === parseInt(filtroEvento, 10));
+  const filtrado = lista.filter((inscricao) => {
+    const bateEvento = filtroEvento === '' || inscricao.idEvento === parseInt(filtroEvento, 10);
+    const participante = nomeParticipante(inscricao.idParticipante).toLowerCase();
+    const bateParticipante = participante.includes(buscaParticipante.trim().toLowerCase());
+
+    return bateEvento && bateParticipante;
+  });
 
   return (
     <div>
@@ -138,6 +150,22 @@ export default function InscricoesPage() {
               {evento.nome}
             </option>
           ))}
+        </select>
+        <input
+          className="form-input"
+          style={{ maxWidth: '280px' }}
+          value={buscaParticipante}
+          onChange={(e) => setBuscaParticipante(e.target.value)}
+          placeholder="Buscar participante..."
+        />
+        <select
+          className="form-select"
+          style={{ maxWidth: '280px' }}
+          value={direcaoBPlus}
+          onChange={(e) => setDirecaoBPlus(e.target.value)}
+        >
+          <option value="asc">Data crescente (B+)</option>
+          <option value="desc">Data decrescente (B+)</option>
         </select>
       </div>
 
