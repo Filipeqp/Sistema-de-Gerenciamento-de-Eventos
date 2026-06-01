@@ -3,6 +3,7 @@ import Eventos from './pages/EventosPage';
 import Palestrantes from './pages/PalestrantesPage';
 import Participantes from './pages/ParticipantesPage';
 import Inscricoes from './pages/InscricoesPage';
+import Compressao from './pages/CompressaoPage';
 import './App.css';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
               <NavLink to="/palestrantes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Palestrantes</NavLink>
               <NavLink to="/participantes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Participantes</NavLink>
               <NavLink to="/inscricoes" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Inscricoes</NavLink>
+              <NavLink to="/compressao" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>Compressao</NavLink>
             </nav>
           </div>
         </header>
@@ -29,6 +31,7 @@ export default function App() {
             <Route path="/palestrantes" element={<Palestrantes />} />
             <Route path="/participantes" element={<Participantes />} />
             <Route path="/inscricoes" element={<Inscricoes />} />
+            <Route path="/compressao" element={<Compressao />} />
           </Routes>
         </main>
       </div>

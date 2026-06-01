@@ -17,6 +17,7 @@ Sistema academico de gerenciamento de eventos desenvolvido para AED III, com per
   - `Evento -> Inscricoes`
   - `Participante -> Inscricoes`
 - Integridade referencial entre as entidades
+- Compressao dos arquivos de dados com Huffman e LZW
 
 ## Arquitetura
 
@@ -86,7 +87,15 @@ Os relacionamentos sao atendidos por listas ligadas persistentes com cabeca loca
 
 ```bash
 cd backend/src
-javac eventos/server/Main.java
+javac $(find . -name "*.java")
+java eventos.server.Main
+```
+
+No PowerShell:
+
+```powershell
+cd backend/src
+javac (Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName })
 java eventos.server.Main
 ```
 
@@ -152,6 +161,23 @@ http://localhost:5173
 - `GET /inscricoes?idEvento={idEvento}`
 - `GET /inscricoes?idParticipante={idParticipante}`
 - `GET /inscricoes?ordenacao=bplus&direcao=asc`
+- `POST /compressao/huffman`
+- `POST /compressao/lzw`
+
+## Compressao - Fase IV
+
+A Fase IV gera um unico arquivo compactado por algoritmo, contendo todos os arquivos `.db` usados pelo aplicativo.
+
+```powershell
+cd backend/src
+javac (Get-ChildItem -Recurse -Filter *.java | ForEach-Object { $_.FullName })
+java eventos.compression.CompressionCli
+```
+
+Saidas geradas:
+
+- `backend/src/storage/compactados/dados-huffman.cmp`
+- `backend/src/storage/compactados/dados-lzw.cmp`
 
 ## Documentacao
 
@@ -163,6 +189,7 @@ Os arquivos em `docs/` incluem:
 - `hash-extensivel.md`
 - `persistencia.md`
 - `fase-3.md`
+- `fase-4.md`
 
 ## Observacoes
 

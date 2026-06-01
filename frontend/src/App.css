@@ -162,3 +162,15 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
   transition: border-color 0.2s;
 }
 .search-input:focus { border-color: var(--accent); }
+
+/* COMPRESSION */
+.compression-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.compression-result {
+  max-width: 640px;
+}

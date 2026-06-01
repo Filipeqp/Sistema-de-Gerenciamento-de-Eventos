@@ -2,6 +2,10 @@ package eventos.server;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import eventos.compression.CompressionReport;
+import eventos.compression.DataArchiveService;
+import eventos.compression.HuffmanCodec;
+import eventos.compression.LzwCodec;
 import eventos.controller.EventoController;
 import eventos.controller.InscricaoController;
 import eventos.controller.PalestranteController;
@@ -26,6 +30,7 @@ public class Main {
     private static PalestranteController palestranteController;
     private static ParticipanteController participanteController;
     private static InscricaoController inscricaoController;
+    private static DataArchiveService dataArchiveService;
 
     public static void main(String[] args) throws Exception {
         String basePath = "./storage";
@@ -39,12 +44,14 @@ public class Main {
         palestranteController = new PalestranteController(palestranteDAO, eventoDAO);
         participanteController = new ParticipanteController(participanteDAO, inscricaoDAO);
         inscricaoController = new InscricaoController(inscricaoDAO, eventoDAO, participanteDAO);
+        dataArchiveService = new DataArchiveService(basePath);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         server.createContext("/eventos", Main::handleEventos);
         server.createContext("/palestrantes", Main::handlePalestrantes);
         server.createContext("/participantes", Main::handleParticipantes);
         server.createContext("/inscricoes", Main::handleInscricoes);
+        server.createContext("/compressao", Main::handleCompressao);
         server.createContext("/health", Main::handleHealth);
         server.setExecutor(null);
         server.start();
@@ -127,6 +134,35 @@ public class Main {
         dispatch(exchange, () -> new ApiResponse(200, JsonUtil.stringify(Map.of("status", "ok"))));
     }
 
+    private static void handleCompressao(HttpExchange exchange) throws IOException {
+        dispatch(exchange, () -> {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                return methodNotAllowed();
+            }
+
+            String algorithm = extractIdOrName(exchange);
+            CompressionReport report;
+
+            // A Fase IV exige Huffman e LZW; cada rota gera um unico arquivo compactado com todos os .db.
+            if ("huffman".equalsIgnoreCase(algorithm)) {
+                report = dataArchiveService.compressDataFiles(new HuffmanCodec());
+            } else if ("lzw".equalsIgnoreCase(algorithm)) {
+                report = dataArchiveService.compressDataFiles(new LzwCodec());
+            } else {
+                return new ApiResponse(400, JsonUtil.stringify(Map.of(
+                        "erro", "Algoritmo invalido. Use /compressao/huffman ou /compressao/lzw")));
+            }
+
+            return new ApiResponse(200, JsonUtil.stringify(Map.of(
+                    "algoritmo", report.getAlgorithm(),
+                    "arquivo", report.getOutputPath().toString(),
+                    "arquivosCompactados", report.getFileCount(),
+                    "tamanhoOriginal", report.getOriginalSize(),
+                    "tamanhoCompactado", report.getCompressedSize(),
+                    "taxaCompressao", String.format("%.2f%%", report.getCompressionRate()))));
+        });
+    }
+
     private static void dispatch(HttpExchange exchange, Handler handler) throws IOException {
         addCors(exchange);
         if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -169,6 +205,14 @@ public class Main {
             return Integer.parseInt(parts[2]);
         }
         return -1;
+    }
+
+    private static String extractIdOrName(HttpExchange exchange) {
+        String[] parts = exchange.getRequestURI().getPath().split("/");
+        if (parts.length >= 3) {
+            return parts[2];
+        }
+        return "";
     }
 
     private static ApiResponse methodNotAllowed() {

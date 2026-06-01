@@ -37,3 +37,8 @@ export const inscricaoAPI = {
   atualizar: (id, data) => axios.put(`${BASE}/inscricoes/${id}`, data),
   excluir: (id) => axios.delete(`${BASE}/inscricoes/${id}`),
 };
+
+export const compressaoAPI = {
+  gerarHuffman: () => axios.post(`${BASE}/compressao/huffman`),
+  gerarLzw: () => axios.post(`${BASE}/compressao/lzw`),
+};
