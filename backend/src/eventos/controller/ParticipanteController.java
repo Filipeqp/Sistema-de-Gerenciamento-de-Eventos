@@ -3,6 +3,7 @@ package eventos.controller;
 import eventos.dao.InscricaoDAO;
 import eventos.dao.ParticipanteDAO;
 import eventos.model.Participante;
+import eventos.security.XorCipher;
 import eventos.util.ApiResponse;
 import eventos.util.JsonUtil;
 import eventos.util.QueryParams;
@@ -70,6 +71,7 @@ public class ParticipanteController {
         String nome = JsonUtil.getString(payload, "nome");
         String email = JsonUtil.getString(payload, "email");
         String interesses = JsonUtil.getString(payload, "interesses");
+        String senha = JsonUtil.getString(payload, "senha");
 
         if (nome.isBlank()) {
             throw new ValidationException("Nome do participante e obrigatorio");
@@ -77,8 +79,14 @@ public class ParticipanteController {
         if (email.isBlank() || !email.contains("@")) {
             throw new ValidationException("Email invalido");
         }
+        if (senha.isBlank()) {
+            throw new ValidationException("Senha do participante e obrigatoria");
+        }
+        if (senha.length() < 4) {
+            throw new ValidationException("Senha deve ter pelo menos 4 caracteres");
+        }
 
-        return new Participante(nome, email, interesses);
+        return new Participante(nome, email, interesses, XorCipher.encrypt(senha));
     }
 
     private ApiResponse error(int status, String message) {

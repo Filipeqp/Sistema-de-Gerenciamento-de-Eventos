@@ -21,7 +21,7 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-const empty = { nome: '', email: '', interesses: '' };
+const empty = { nome: '', email: '', interesses: '', senha: '' };
 
 export default function ParticipantesPage() {
   const [lista, setLista] = useState([]);
@@ -51,13 +51,17 @@ export default function ParticipantesPage() {
 
   const abrir = (participante = null) => {
     setEditando(participante);
-    setForm(participante ? { nome: participante.nome, email: participante.email, interesses: participante.interesses } : empty);
+    setForm(
+      participante
+        ? { nome: participante.nome, email: participante.email, interesses: participante.interesses, senha: '' }
+        : empty
+    );
     setShowModal(true);
   };
 
   const salvar = async () => {
-    if (!form.nome.trim() || !form.email.trim()) {
-      toast_('Nome e email sao obrigatorios', 'error');
+    if (!form.nome.trim() || !form.email.trim() || !form.senha.trim()) {
+      toast_('Nome, email e senha sao obrigatorios', 'error');
       return;
     }
 
@@ -169,6 +173,16 @@ export default function ParticipantesPage() {
           <div className="form-group">
             <label className="form-label">Interesses (separados por virgula)</label>
             <input className="form-input" value={form.interesses} onChange={(e) => setForm({ ...form, interesses: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Senha</label>
+            <input
+              className="form-input"
+              type="password"
+              value={form.senha}
+              onChange={(e) => setForm({ ...form, senha: e.target.value })}
+              placeholder="Minimo de 4 caracteres"
+            />
           </div>
           <div className="modal-actions">
             <button className="btn btn-ghost" onClick={() => setShowModal(false)}>

@@ -42,3 +42,14 @@ export const compressaoAPI = {
   gerarHuffman: () => axios.post(`${BASE}/compressao/huffman`),
   gerarLzw: () => axios.post(`${BASE}/compressao/lzw`),
 };
+
+export const pesquisaAPI = {
+  buscar: (params = {}) => axios.get(`${BASE}/pesquisa`, { params }),
+};
+
+export const authAPI = {
+  status: () => axios.get(`${BASE}/auth/status`),
+  login: (data) => axios.post(`${BASE}/auth/login`, data),
+  primeiroAcesso: (data) => axios.post(`${BASE}/auth/primeiro-acesso`, data),
+  registrar: (data) => axios.post(`${BASE}/auth/register`, data),
+};

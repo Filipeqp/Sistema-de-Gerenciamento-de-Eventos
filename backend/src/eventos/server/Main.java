@@ -10,10 +10,14 @@ import eventos.controller.EventoController;
 import eventos.controller.InscricaoController;
 import eventos.controller.PalestranteController;
 import eventos.controller.ParticipanteController;
+import eventos.controller.AuthController;
+import eventos.controller.PesquisaController;
 import eventos.dao.EventoDAO;
 import eventos.dao.InscricaoDAO;
 import eventos.dao.PalestranteDAO;
 import eventos.dao.ParticipanteDAO;
+import eventos.pattern.PatternSearchService;
+import eventos.security.AuthService;
 import eventos.util.ApiResponse;
 import eventos.util.JsonUtil;
 import eventos.util.ValidationException;
@@ -31,6 +35,8 @@ public class Main {
     private static ParticipanteController participanteController;
     private static InscricaoController inscricaoController;
     private static DataArchiveService dataArchiveService;
+    private static PesquisaController pesquisaController;
+    private static AuthController authController;
 
     public static void main(String[] args) throws Exception {
         String basePath = "./storage";
@@ -45,6 +51,9 @@ public class Main {
         participanteController = new ParticipanteController(participanteDAO, inscricaoDAO);
         inscricaoController = new InscricaoController(inscricaoDAO, eventoDAO, participanteDAO);
         dataArchiveService = new DataArchiveService(basePath);
+        pesquisaController = new PesquisaController(new PatternSearchService(
+                eventoDAO, palestranteDAO, participanteDAO, inscricaoDAO));
+        authController = new AuthController(new AuthService(participanteDAO));
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         server.createContext("/eventos", Main::handleEventos);
@@ -52,6 +61,8 @@ public class Main {
         server.createContext("/participantes", Main::handleParticipantes);
         server.createContext("/inscricoes", Main::handleInscricoes);
         server.createContext("/compressao", Main::handleCompressao);
+        server.createContext("/pesquisa", Main::handlePesquisa);
+        server.createContext("/auth", Main::handleAuth);
         server.createContext("/health", Main::handleHealth);
         server.setExecutor(null);
         server.start();
@@ -132,6 +143,40 @@ public class Main {
 
     private static void handleHealth(HttpExchange exchange) throws IOException {
         dispatch(exchange, () -> new ApiResponse(200, JsonUtil.stringify(Map.of("status", "ok"))));
+    }
+
+    private static void handlePesquisa(HttpExchange exchange) throws IOException {
+        dispatch(exchange, () -> {
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                return methodNotAllowed();
+            }
+            return pesquisaController.search(exchange.getRequestURI().getQuery());
+        });
+    }
+
+    private static void handleAuth(HttpExchange exchange) throws IOException {
+        dispatch(exchange, () -> {
+            String action = extractIdOrName(exchange);
+            if ("status".equalsIgnoreCase(action)) {
+                if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    return methodNotAllowed();
+                }
+                return authController.status();
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                return methodNotAllowed();
+            }
+            if ("login".equalsIgnoreCase(action)) {
+                return authController.login(readBody(exchange));
+            }
+            if ("primeiro-acesso".equalsIgnoreCase(action)) {
+                return authController.registerFirstAccess(readBody(exchange));
+            }
+            if ("register".equalsIgnoreCase(action)) {
+                return authController.register(readBody(exchange));
+            }
+            return new ApiResponse(404, JsonUtil.stringify(Map.of("erro", "Rota de autenticacao nao encontrada")));
+        });
     }
 
     private static void handleCompressao(HttpExchange exchange) throws IOException {

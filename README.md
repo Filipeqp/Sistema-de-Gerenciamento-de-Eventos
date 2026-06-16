@@ -18,6 +18,8 @@ Sistema academico de gerenciamento de eventos desenvolvido para AED III, com per
   - `Participante -> Inscricoes`
 - Integridade referencial entre as entidades
 - Compressao dos arquivos de dados com Huffman e LZW
+- Pesquisa textual com Boyer-Moore e KMP
+- Login com criptografia XOR
 
 ## Arquitetura
 
@@ -163,6 +165,8 @@ http://localhost:5173
 - `GET /inscricoes?ordenacao=bplus&direcao=asc`
 - `POST /compressao/huffman`
 - `POST /compressao/lzw`
+- `GET /pesquisa?algoritmo=bm&entidade=todos&padrao=java`
+- `POST /auth/login`
 
 ## Compressao - Fase IV
 
@@ -190,6 +194,7 @@ Os arquivos em `docs/` incluem:
 - `persistencia.md`
 - `fase-3.md`
 - `fase-4.md`
+- `fase-5.md`
 
 ## Observacoes
 

@@ -14,20 +14,30 @@ public class Participante implements Record {
     private String nome;
     private String email;
     private String interesses;
+    private String senha;
 
     public Participante() {
-        this(-1, "", "", "");
+        this(-1, "", "", "", "");
     }
 
     public Participante(String nome, String email, String interesses) {
-        this(-1, nome, email, interesses);
+        this(-1, nome, email, interesses, "");
+    }
+
+    public Participante(String nome, String email, String interesses, String senha) {
+        this(-1, nome, email, interesses, senha);
     }
 
     public Participante(int id, String nome, String email, String interesses) {
+        this(id, nome, email, interesses, "");
+    }
+
+    public Participante(int id, String nome, String email, String interesses, String senha) {
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.interesses = interesses;
+        this.senha = senha;
     }
 
     @Override
@@ -52,6 +62,10 @@ public class Participante implements Record {
         return interesses;
     }
 
+    public String getSenha() {
+        return senha;
+    }
+
     public void setNome(String nome) {
         this.nome = nome;
     }
@@ -64,6 +78,10 @@ public class Participante implements Record {
         this.interesses = interesses;
     }
 
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
     @Override
     public byte[] toByteArray() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -72,6 +90,7 @@ public class Participante implements Record {
         dos.writeUTF(nome);
         dos.writeUTF(email);
         dos.writeUTF(interesses);
+        dos.writeUTF(senha == null ? "" : senha);
         return baos.toByteArray();
     }
 
@@ -83,6 +102,7 @@ public class Participante implements Record {
         nome = dis.readUTF();
         email = dis.readUTF();
         interesses = dis.readUTF();
+        senha = dis.available() > 0 ? dis.readUTF() : "";
     }
 
     public Map<String, Object> toMap() {
