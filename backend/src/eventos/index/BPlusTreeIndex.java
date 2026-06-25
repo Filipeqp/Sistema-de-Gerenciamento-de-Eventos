@@ -163,6 +163,11 @@ public class BPlusTreeIndex {
         return readRoot() == NULL_PTR;
     }
 
+    public synchronized void clear() throws IOException {
+        file.setLength(0);
+        writeHeader(NULL_PTR, ORDER, 0);
+    }
+
     public synchronized void close() throws IOException {
         file.close();
     }

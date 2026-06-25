@@ -209,6 +209,14 @@ public abstract class AbstractDAO<T extends Record> {
         sortIndex.close();
     }
 
+    protected void rebuildSortIndex() throws Exception {
+        sortIndex.clear();
+        for (RecordEnvelope<T> envelope : dataFile.scanActive()) {
+            T record = envelope.getRecord();
+            sortIndex.insert(sortKey(record), record.getId());
+        }
+    }
+
     // ============================================================
     // Reconstrução de índices
     // ============================================================

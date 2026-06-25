@@ -5,6 +5,7 @@ import eventos.model.Inscricao;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class InscricaoDAO extends AbstractDAO<Inscricao> {
@@ -27,6 +28,7 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
         this.byParticipanteIndex = new LinkedEntityListIndex(
                 basePath + "/indices/inscricoes",
                 "inscricoes_por_participante");
+        rebuildSortIndex();
         rebuildRelationshipIndexesIfNeeded();
     }
 
@@ -81,7 +83,7 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     @Override
     protected String sortKey(Inscricao i) {
         // Ordena por data de inscrição
-        return i.getDataInscricao() != null ? i.getDataInscricao() : "";
+        return normalizeDateForSorting(i.getDataInscricao());
     }
 
     @Override
@@ -152,5 +154,19 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
             byEventoIndex.add(i.getIdEvento(), i.getId());
             byParticipanteIndex.add(i.getIdParticipante(), i.getId());
         }
+    }
+
+    private String normalizeDateForSorting(String rawDate) {
+        if (rawDate == null) return "";
+
+        String value = rawDate.trim();
+        if (value.matches("\\d{2}/\\d{2}/\\d{4}")) {
+            String[] parts = value.split("/");
+            return parts[2] + parts[1] + parts[0];
+        }
+        if (value.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return value.replace("-", "");
+        }
+        return value.toLowerCase(Locale.ROOT);
     }
 }

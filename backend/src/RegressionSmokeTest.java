@@ -97,8 +97,8 @@ public class RegressionSmokeTest {
             System.out.println(" - " + participante.getId() + ": " + participante.getNome());
         }
 
-        Inscricao inscricao1 = inscricaoDAO.create(new Inscricao(evento.getId(), participanteCurto.getId(), "2026-04-20"));
-        Inscricao inscricao2 = inscricaoDAO.create(new Inscricao(workshop.getId(), participanteCurto.getId(), "2026-04-18"));
+        Inscricao inscricao1 = inscricaoDAO.create(new Inscricao(evento.getId(), participanteCurto.getId(), "01/07/2026"));
+        Inscricao inscricao2 = inscricaoDAO.create(new Inscricao(workshop.getId(), participanteCurto.getId(), "30/06/2026"));
         assertEquals(1, inscricaoDAO.listByEvento(evento.getId()).size(), "Indice N:N por evento ficou inconsistente");
         assertEquals(2, inscricaoDAO.listByParticipante(participanteCurto.getId()).size(), "Indice N:N por participante ficou inconsistente");
         List<Inscricao> inscricoesOrdenadas = inscricaoDAO.listAllOrdered();
