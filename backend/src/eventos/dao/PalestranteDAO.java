@@ -82,6 +82,12 @@ public class PalestranteDAO extends AbstractDAO<Palestrante> {
         byEventoIndex.remove(previous.getIdEvento(), previous.getId());
     }
 
+    @Override
+    public void close() throws Exception {
+        super.close();
+        byEventoIndex.close();
+    }
+
     private void rebuildRelationshipIndexIfNeeded() throws Exception {
         if (!byEventoIndex.isEmpty()) return;
         for (Palestrante p : listAll()) {

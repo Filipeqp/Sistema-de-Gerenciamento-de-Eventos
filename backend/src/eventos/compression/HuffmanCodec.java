@@ -1,6 +1,8 @@
 package eventos.compression;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.PriorityQueue;
 
@@ -14,6 +16,7 @@ public class HuffmanCodec implements CompressionCodec {
     @Override
     public byte[] compress(byte[] input) throws Exception {
         int[] frequencies = new int[256];
+        // Huffman começa contando a frequencia de cada byte: bytes mais frequentes recebem codigos menores.
         for (byte value : input) {
             frequencies[value & 0xFF]++;
         }
@@ -55,12 +58,57 @@ public class HuffmanCodec implements CompressionCodec {
             data.writeUTF("HUFF");
             data.writeInt(input.length);
             data.writeInt(validBitsInLastByte);
+            // Salvamos as frequencias para reconstruir a mesma arvore na descompactacao.
             for (int frequency : frequencies) {
                 data.writeInt(frequency);
             }
             data.write(payload.toByteArray());
         }
         return output.toByteArray();
+    }
+
+    @Override
+    public byte[] decompress(byte[] input) throws Exception {
+        try (DataInputStream data = new DataInputStream(new ByteArrayInputStream(input))) {
+            String magic = data.readUTF();
+            if (!"HUFF".equals(magic)) {
+                throw new IllegalArgumentException("Arquivo Huffman invalido");
+            }
+
+            int originalLength = data.readInt();
+            data.readInt(); // O ultimo byte pode ter padding; o tamanho original limita a leitura.
+            int[] frequencies = new int[256];
+            for (int i = 0; i < frequencies.length; i++) {
+                frequencies[i] = data.readInt();
+            }
+
+            // A arvore nao precisa ser salva inteira: ela e reconstruida pelas frequencias gravadas no cabecalho.
+            Node root = buildTree(frequencies);
+            ByteArrayOutputStream output = new ByteArrayOutputStream(originalLength);
+            if (root == null || originalLength == 0) {
+                return output.toByteArray();
+            }
+
+            if (root.isLeaf()) {
+                for (int i = 0; i < originalLength; i++) {
+                    output.write(root.value);
+                }
+                return output.toByteArray();
+            }
+
+            Node current = root;
+            while (data.available() > 0 && output.size() < originalLength) {
+                int packed = data.readUnsignedByte();
+                for (int bit = 7; bit >= 0 && output.size() < originalLength; bit--) {
+                    current = ((packed >> bit) & 1) == 0 ? current.left : current.right;
+                    if (current.isLeaf()) {
+                        output.write(current.value);
+                        current = root;
+                    }
+                }
+            }
+            return output.toByteArray();
+        }
     }
 
     private Node buildTree(int[] frequencies) {

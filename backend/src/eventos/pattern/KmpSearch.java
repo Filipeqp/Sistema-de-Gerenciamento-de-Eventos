@@ -32,6 +32,7 @@ public class KmpSearch implements PatternMatchAlgorithm {
                     j = lps[j - 1];
                 }
             } else if (j > 0) {
+                // Em vez de voltar no texto, o KMP volta apenas no padrao usando a tabela LPS.
                 j = lps[j - 1];
             } else {
                 i++;

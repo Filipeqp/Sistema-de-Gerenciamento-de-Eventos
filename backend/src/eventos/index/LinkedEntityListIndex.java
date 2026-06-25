@@ -10,6 +10,14 @@ public class LinkedEntityListIndex {
 
     private static final long NULL_POINTER = -1L;
 
+    /*
+     * Indice usado nos relacionamentos em que uma chave possui varios registros.
+     * Exemplo da Fase III:
+     *   idEvento = 1 -> inscricao 8 -> inscricao 5 -> inscricao 2
+     *
+     * O Hash Extensivel nao guarda todos os IDs diretamente. Ele guarda apenas
+     * o ponteiro para a cabeca da lista ligada persistida em arquivo.
+     */
     private final ExtensibleHashIndex headIndex;
     private final RandomAccessFile nodeFile;
 
@@ -27,9 +35,11 @@ public class LinkedEntityListIndex {
         long currentHead = headIndex.get(key);
         long newNode = nodeFile.length();
         nodeFile.seek(newNode);
+        // Cada nó guarda: ativo, id da entidade relacionada e ponteiro para o proximo no.
         nodeFile.writeBoolean(true);
         nodeFile.writeInt(entityId);
         nodeFile.writeLong(currentHead);
+        // O novo nó vira a cabeca da lista para essa chave.
         headIndex.put(key, newNode);
     }
 
@@ -41,6 +51,7 @@ public class LinkedEntityListIndex {
             int storedId = nodeFile.readInt();
             long next = nodeFile.readLong();
             if (active && storedId == entityId) {
+                // Remocao logica: preserva a estrutura do arquivo e apenas marca o nó como inativo.
                 nodeFile.seek(pointer);
                 nodeFile.writeBoolean(false);
                 return;
@@ -52,6 +63,7 @@ public class LinkedEntityListIndex {
     public synchronized Set<Integer> list(int key) throws IOException {
         Set<Integer> ids = new LinkedHashSet<>();
         long pointer = headIndex.get(key);
+        // Primeiro o Hash encontra a cabeca; depois percorremos a lista para coletar todos os IDs.
         while (pointer != NULL_POINTER) {
             nodeFile.seek(pointer);
             boolean active = nodeFile.readBoolean();

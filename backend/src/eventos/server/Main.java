@@ -6,6 +6,7 @@ import eventos.compression.CompressionReport;
 import eventos.compression.DataArchiveService;
 import eventos.compression.HuffmanCodec;
 import eventos.compression.LzwCodec;
+import eventos.compression.RestoreReport;
 import eventos.controller.EventoController;
 import eventos.controller.InscricaoController;
 import eventos.controller.PalestranteController;
@@ -37,23 +38,14 @@ public class Main {
     private static DataArchiveService dataArchiveService;
     private static PesquisaController pesquisaController;
     private static AuthController authController;
+    private static EventoDAO eventoDAO;
+    private static PalestranteDAO palestranteDAO;
+    private static ParticipanteDAO participanteDAO;
+    private static InscricaoDAO inscricaoDAO;
+    private static final String BASE_PATH = "./storage";
 
     public static void main(String[] args) throws Exception {
-        String basePath = "./storage";
-
-        EventoDAO eventoDAO = new EventoDAO(basePath);
-        ParticipanteDAO participanteDAO = new ParticipanteDAO(basePath);
-        InscricaoDAO inscricaoDAO = new InscricaoDAO(basePath);
-        PalestranteDAO palestranteDAO = new PalestranteDAO(basePath);
-
-        eventoController = new EventoController(eventoDAO, palestranteDAO, inscricaoDAO);
-        palestranteController = new PalestranteController(palestranteDAO, eventoDAO);
-        participanteController = new ParticipanteController(participanteDAO, inscricaoDAO);
-        inscricaoController = new InscricaoController(inscricaoDAO, eventoDAO, participanteDAO);
-        dataArchiveService = new DataArchiveService(basePath);
-        pesquisaController = new PesquisaController(new PatternSearchService(
-                eventoDAO, palestranteDAO, participanteDAO, inscricaoDAO));
-        authController = new AuthController(new AuthService(participanteDAO));
+        initializeApplication();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         server.createContext("/eventos", Main::handleEventos);
@@ -185,8 +177,34 @@ public class Main {
                 return methodNotAllowed();
             }
 
-            String algorithm = extractIdOrName(exchange);
+            String action = pathPart(exchange, 2);
+            String algorithm = "restaurar".equalsIgnoreCase(action) ? pathPart(exchange, 3) : action;
+            boolean restore = "restaurar".equalsIgnoreCase(action);
             CompressionReport report;
+
+            if (restore) {
+                RestoreReport restoreReport;
+                closeDaos();
+                try {
+                    if ("huffman".equalsIgnoreCase(algorithm)) {
+                        restoreReport = dataArchiveService.restoreDataFiles(new HuffmanCodec());
+                    } else if ("lzw".equalsIgnoreCase(algorithm)) {
+                        restoreReport = dataArchiveService.restoreDataFiles(new LzwCodec());
+                    } else {
+                        return new ApiResponse(400, JsonUtil.stringify(Map.of(
+                                "erro", "Algoritmo invalido. Use /compressao/restaurar/huffman ou /compressao/restaurar/lzw")));
+                    }
+                } finally {
+                    initializeApplication();
+                }
+
+                return new ApiResponse(200, JsonUtil.stringify(Map.of(
+                        "algoritmo", restoreReport.getAlgorithm(),
+                        "arquivo", restoreReport.getInputPath().toString(),
+                        "arquivosRestaurados", restoreReport.getRestoredFiles(),
+                        "tamanhoRestaurado", restoreReport.getRestoredSize(),
+                        "mensagem", "Dados restaurados e indices reconstruidos")));
+            }
 
             // A Fase IV exige Huffman e LZW; cada rota gera um unico arquivo compactado com todos os .db.
             if ("huffman".equalsIgnoreCase(algorithm)) {
@@ -206,6 +224,29 @@ public class Main {
                     "tamanhoCompactado", report.getCompressedSize(),
                     "taxaCompressao", String.format("%.2f%%", report.getCompressionRate()))));
         });
+    }
+
+    private static void initializeApplication() throws Exception {
+        eventoDAO = new EventoDAO(BASE_PATH);
+        participanteDAO = new ParticipanteDAO(BASE_PATH);
+        inscricaoDAO = new InscricaoDAO(BASE_PATH);
+        palestranteDAO = new PalestranteDAO(BASE_PATH);
+
+        eventoController = new EventoController(eventoDAO, palestranteDAO, inscricaoDAO);
+        palestranteController = new PalestranteController(palestranteDAO, eventoDAO);
+        participanteController = new ParticipanteController(participanteDAO, inscricaoDAO);
+        inscricaoController = new InscricaoController(inscricaoDAO, eventoDAO, participanteDAO);
+        dataArchiveService = new DataArchiveService(BASE_PATH);
+        pesquisaController = new PesquisaController(new PatternSearchService(
+                eventoDAO, palestranteDAO, participanteDAO, inscricaoDAO));
+        authController = new AuthController(new AuthService(participanteDAO));
+    }
+
+    private static void closeDaos() throws Exception {
+        if (eventoDAO != null) eventoDAO.close();
+        if (palestranteDAO != null) palestranteDAO.close();
+        if (participanteDAO != null) participanteDAO.close();
+        if (inscricaoDAO != null) inscricaoDAO.close();
     }
 
     private static void dispatch(HttpExchange exchange, Handler handler) throws IOException {
@@ -258,6 +299,11 @@ public class Main {
             return parts[2];
         }
         return "";
+    }
+
+    private static String pathPart(HttpExchange exchange, int index) {
+        String[] parts = exchange.getRequestURI().getPath().split("/");
+        return parts.length > index ? parts[index] : "";
     }
 
     private static ApiResponse methodNotAllowed() {

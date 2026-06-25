@@ -2,14 +2,14 @@
 
 ## Status
 
-- `4a` implementada: compactacao com `Huffman` e `LZW`
+- `4a` implementada: compactacao e descompactacao/restauracao com `Huffman` e `LZW`
 - `4b` implementada: pesquisa por casamento de padroes com `Boyer-Moore` e `KMP`
 
 ## Parte A - Compactacao
 
 ### Objetivo
 
-Aplicar compactacao aos arquivos de dados do sistema sem alterar o funcionamento das fases anteriores. O CRUD, os indices e os relacionamentos continuam usando os arquivos originais em `storage/dados`; a compactacao apenas gera arquivos de backup compactados.
+Aplicar compactacao aos arquivos de dados do sistema sem alterar o funcionamento das fases anteriores. O CRUD, os indices e os relacionamentos continuam usando os arquivos originais em `storage/dados`; a compactacao gera arquivos de backup compactados e a restauracao regrava os `.db` a partir desses backups.
 
 ### Arquivos gerados
 
@@ -30,6 +30,10 @@ Tambem e possivel gerar os arquivos pelo servidor:
 
 - `POST /compressao/huffman`
 - `POST /compressao/lzw`
+- `POST /compressao/restaurar/huffman`
+- `POST /compressao/restaurar/lzw`
+
+Na restauracao, os arquivos `.db` sao regravados em `storage/dados` e a pasta `storage/indices` e removida para que Hash Extensivel, Arvore B+ e indices relacionais sejam reconstruidos pelos DAOs.
 
 ## Parte B - Casamento de Padroes
 
@@ -157,6 +161,9 @@ No navegador ou no Postman:
 2. Gerar `Huffman`.
 3. Gerar `LZW`.
 4. Mostrar o caminho do arquivo gerado e a taxa de compactacao.
+5. Excluir registros de uma tabela.
+6. Restaurar os dados usando o mesmo algoritmo compactado.
+7. Voltar para a tabela e mostrar que os registros foram recuperados.
 
 ### Casamento de padroes
 

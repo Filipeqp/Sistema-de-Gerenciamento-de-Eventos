@@ -22,6 +22,22 @@ export default function CompressaoPage() {
     }
   }
 
+  async function restaurar(tipo) {
+    setErro('');
+    setCarregando(`restaurar-${tipo}`);
+
+    try {
+      const response = tipo === 'huffman'
+        ? await compressaoAPI.restaurarHuffman()
+        : await compressaoAPI.restaurarLzw();
+      setResultado(response.data);
+    } catch (error) {
+      setErro(error.response?.data?.erro || 'Nao foi possivel restaurar os dados');
+    } finally {
+      setCarregando('');
+    }
+  }
+
   return (
     <section>
       <div className="page-header">
@@ -43,6 +59,20 @@ export default function CompressaoPage() {
         >
           {carregando === 'lzw' ? 'Gerando...' : 'Gerar LZW'}
         </button>
+        <button
+          className="btn btn-primary"
+          onClick={() => restaurar('huffman')}
+          disabled={Boolean(carregando)}
+        >
+          {carregando === 'restaurar-huffman' ? 'Restaurando...' : 'Restaurar Huffman'}
+        </button>
+        <button
+          className="btn btn-ghost"
+          onClick={() => restaurar('lzw')}
+          disabled={Boolean(carregando)}
+        >
+          {carregando === 'restaurar-lzw' ? 'Restaurando...' : 'Restaurar LZW'}
+        </button>
       </div>
 
       {erro && <div className="toast toast-error">{erro}</div>}
@@ -50,22 +80,48 @@ export default function CompressaoPage() {
       {resultado && (
         <div className="card compression-result">
           <h2 className="card-title">{resultado.algoritmo.toUpperCase()}</h2>
-          <div className="card-field">
-            <span className="card-label">Arquivos</span>
-            <span className="card-value">{resultado.arquivosCompactados}</span>
-          </div>
-          <div className="card-field">
-            <span className="card-label">Original</span>
-            <span className="card-value">{resultado.tamanhoOriginal} bytes</span>
-          </div>
-          <div className="card-field">
-            <span className="card-label">Compactado</span>
-            <span className="card-value">{resultado.tamanhoCompactado} bytes</span>
-          </div>
-          <div className="card-field">
-            <span className="card-label">Taxa</span>
-            <span className="card-value">{resultado.taxaCompressao}</span>
-          </div>
+          {resultado.mensagem && (
+            <div className="card-field">
+              <span className="card-label">Status</span>
+              <span className="card-value">{resultado.mensagem}</span>
+            </div>
+          )}
+          {resultado.arquivosCompactados !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Arquivos</span>
+              <span className="card-value">{resultado.arquivosCompactados}</span>
+            </div>
+          )}
+          {resultado.arquivosRestaurados !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Restaurados</span>
+              <span className="card-value">{resultado.arquivosRestaurados}</span>
+            </div>
+          )}
+          {resultado.tamanhoOriginal !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Original</span>
+              <span className="card-value">{resultado.tamanhoOriginal} bytes</span>
+            </div>
+          )}
+          {resultado.tamanhoCompactado !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Compactado</span>
+              <span className="card-value">{resultado.tamanhoCompactado} bytes</span>
+            </div>
+          )}
+          {resultado.tamanhoRestaurado !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Restaurado</span>
+              <span className="card-value">{resultado.tamanhoRestaurado} bytes</span>
+            </div>
+          )}
+          {resultado.taxaCompressao !== undefined && (
+            <div className="card-field">
+              <span className="card-label">Taxa</span>
+              <span className="card-value">{resultado.taxaCompressao}</span>
+            </div>
+          )}
           <div className="card-field">
             <span className="card-label">Arquivo</span>
             <span className="card-value">{resultado.arquivo}</span>

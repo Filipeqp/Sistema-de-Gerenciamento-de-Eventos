@@ -5,6 +5,7 @@ import java.util.Base64;
 
 public final class XorCipher {
 
+    // Chave fixa usada para transformar a senha. O mesmo XOR criptografa e descriptografa.
     private static final byte[] KEY = "GestEvent-AED3-XOR".getBytes(StandardCharsets.UTF_8);
 
     private XorCipher() {
@@ -22,6 +23,7 @@ public final class XorCipher {
         if (source.isBlank()) {
             return "";
         }
+        // O arquivo armazena Base64; primeiro voltamos para bytes e depois aplicamos XOR novamente.
         byte[] decoded = Base64.getDecoder().decode(source);
         return new String(apply(decoded), StandardCharsets.UTF_8);
     }

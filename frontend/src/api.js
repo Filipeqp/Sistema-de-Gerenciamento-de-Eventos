@@ -41,6 +41,8 @@ export const inscricaoAPI = {
 export const compressaoAPI = {
   gerarHuffman: () => axios.post(`${BASE}/compressao/huffman`),
   gerarLzw: () => axios.post(`${BASE}/compressao/lzw`),
+  restaurarHuffman: () => axios.post(`${BASE}/compressao/restaurar/huffman`),
+  restaurarLzw: () => axios.post(`${BASE}/compressao/restaurar/lzw`),
 };
 
 export const pesquisaAPI = {

@@ -26,6 +26,7 @@ public class BoyerMooreSearch implements PatternMatchAlgorithm {
         while (shift <= text.length() - pattern.length()) {
             int j = pattern.length() - 1;
 
+            // Boyer-Moore compara o padrao da direita para a esquerda.
             while (j >= 0 && pattern.charAt(j) == text.charAt(shift + j)) {
                 j--;
             }
@@ -38,6 +39,7 @@ public class BoyerMooreSearch implements PatternMatchAlgorithm {
                         : 1;
             } else {
                 int offset = j - badChar[text.charAt(shift + j)];
+                // O salto evita testar posicoes que certamente nao poderiam casar com o padrao.
                 shift += Math.max(1, offset);
             }
         }

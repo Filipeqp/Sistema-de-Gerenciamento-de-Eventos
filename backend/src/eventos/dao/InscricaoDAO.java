@@ -9,6 +9,13 @@ import java.util.Set;
 
 public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
+    /*
+     * A inscricao e a tabela intermediaria do relacionamento N:N:
+     *   Evento <-> Inscricao <-> Participante
+     *
+     * Mantemos dois indices porque a demonstracao precisa consultar o relacionamento
+     * nos dois sentidos: inscricoes de um evento e inscricoes de um participante.
+     */
     private final LinkedEntityListIndex byEventoIndex;
     private final LinkedEntityListIndex byParticipanteIndex;
 
@@ -36,10 +43,12 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     }
 
     public List<Inscricao> listByEvento(int idEvento) throws Exception {
+        // Usa o indice relacional: chave = idEvento, valores = IDs das inscricoes daquele evento.
         return collect(byEventoIndex.list(idEvento), idEvento, true);
     }
 
     public List<Inscricao> listByParticipante(int idParticipante) throws Exception {
+        // Usa o indice relacional no sentido inverso: chave = idParticipante.
         return collect(byParticipanteIndex.list(idParticipante), idParticipante, false);
     }
 
@@ -77,6 +86,7 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
     @Override
     protected void afterCreate(Inscricao record) throws Exception {
+        // Ao criar a inscricao, atualizamos imediatamente os dois indices do N:N.
         byEventoIndex.add(record.getIdEvento(), record.getId());
         byParticipanteIndex.add(record.getIdParticipante(), record.getId());
     }
@@ -84,10 +94,12 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     @Override
     protected void afterUpdate(Inscricao previous, Inscricao updated) throws Exception {
         if (previous.getIdEvento() != updated.getIdEvento()) {
+            // Se a inscricao mudou de evento, remove do indice antigo e inclui no novo.
             byEventoIndex.remove(previous.getIdEvento(), previous.getId());
             byEventoIndex.add(updated.getIdEvento(), updated.getId());
         }
         if (previous.getIdParticipante() != updated.getIdParticipante()) {
+            // Mesma logica para mudanca de participante.
             byParticipanteIndex.remove(previous.getIdParticipante(), previous.getId());
             byParticipanteIndex.add(updated.getIdParticipante(), updated.getId());
         }
@@ -95,8 +107,16 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
     @Override
     protected void afterDelete(Inscricao previous) throws Exception {
+        // Na exclusao, a inscricao deixa de aparecer nos dois sentidos do relacionamento.
         byEventoIndex.remove(previous.getIdEvento(), previous.getId());
         byParticipanteIndex.remove(previous.getIdParticipante(), previous.getId());
+    }
+
+    @Override
+    public void close() throws Exception {
+        super.close();
+        byEventoIndex.close();
+        byParticipanteIndex.close();
     }
 
     private List<Inscricao> collect(Set<Integer> ids, int filterId, boolean filterEvento) throws Exception {
@@ -111,6 +131,7 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
     }
 
     private List<Inscricao> filterOrdered(int filterId, boolean filterEvento, boolean descending) throws Exception {
+        // Aqui combinamos B+ e filtro do relacionamento: primeiro vem a ordem da B+, depois filtramos o lado desejado.
         List<Inscricao> source = descending ? listAllOrderedDesc() : listAllOrdered();
         List<Inscricao> items = new ArrayList<>();
         for (Inscricao i : source) {
@@ -126,6 +147,7 @@ public class InscricaoDAO extends AbstractDAO<Inscricao> {
 
     private void rebuildRelationshipIndexesIfNeeded() throws Exception {
         if (!byEventoIndex.isEmpty() || !byParticipanteIndex.isEmpty()) return;
+        // Se os arquivos de indice foram removidos/restaurados, eles sao reconstruidos a partir dos dados ativos.
         for (Inscricao i : listAll()) {
             byEventoIndex.add(i.getIdEvento(), i.getId());
             byParticipanteIndex.add(i.getIdParticipante(), i.getId());

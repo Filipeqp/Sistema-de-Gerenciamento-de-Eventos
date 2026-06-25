@@ -86,6 +86,7 @@ public class ParticipanteController {
             throw new ValidationException("Senha deve ter pelo menos 4 caracteres");
         }
 
+        // A senha digitada nunca vai para o arquivo em texto puro; ela ja sai daqui criptografada.
         return new Participante(nome, email, interesses, XorCipher.encrypt(senha));
     }
 

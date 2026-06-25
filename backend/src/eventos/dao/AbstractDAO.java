@@ -133,7 +133,9 @@ public abstract class AbstractDAO<T extends Record> {
     protected T createInternal(T record) throws Exception {
         record.setId(dataFile.nextId());
         long position = dataFile.create(record);
+        // Hash Extensivel: liga o ID do registro ao endereco fisico dentro do arquivo .db.
         primaryIndex.put(record.getId(), position);
+        // Arvore B+: guarda a chave de ordenacao e o ID para listagens ordenadas.
         sortIndex.insert(sortKey(record), record.getId());
         afterCreate(record);
         return record;
@@ -153,6 +155,7 @@ public abstract class AbstractDAO<T extends Record> {
         long newPosition = dataFile.update(currentPosition, updated);
         if (newPosition < 0) return null;
 
+        // Se o registro mudou de lugar no arquivo, o Hash passa a apontar para a nova posicao.
         primaryIndex.put(id, newPosition);
 
         // Atualiza B+: remove chave antiga, insere nova
@@ -175,6 +178,7 @@ public abstract class AbstractDAO<T extends Record> {
 
         boolean removed = dataFile.delete(position);
         if (removed) {
+            // Mantem os indices coerentes com a exclusao logica do arquivo de dados.
             primaryIndex.remove(id);
             sortIndex.remove(sortKey(previous), id);
             afterDelete(previous);
@@ -199,6 +203,12 @@ public abstract class AbstractDAO<T extends Record> {
         return String.valueOf(record.getId());
     }
 
+    public void close() throws Exception {
+        dataFile.close();
+        primaryIndex.close();
+        sortIndex.close();
+    }
+
     // ============================================================
     // Reconstrução de índices
     // ============================================================
@@ -209,6 +219,7 @@ public abstract class AbstractDAO<T extends Record> {
 
         if (!hashEmpty && !treeEmpty) return;
 
+        // Quando restauramos os .db compactados, os indices podem ser apagados e recriados daqui.
         if (!hashEmpty) {
             for (int id : primaryIndex.listKeys()) {
                 T record = findById(id);
