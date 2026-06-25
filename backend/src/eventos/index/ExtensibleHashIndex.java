@@ -140,6 +140,8 @@ public class ExtensibleHashIndex {
         int globalDepth = readGlobalDepth();
 
         if (oldLocalDepth == globalDepth) {
+            // Se a profundidade local chegou na global, precisamos duplicar o diretorio
+            // antes de separar o bucket.
             doubleDirectory(globalDepth);
             globalDepth++;
         }
@@ -151,6 +153,8 @@ public class ExtensibleHashIndex {
         int directorySize = 1 << globalDepth;
         for (int i = 0; i < directorySize; i++) {
             if (readDirectoryEntry(i) == bucketOffset) {
+                // No Hash Extensivel nao existe "menor da esquerda" ou "maior da direita".
+                // A divisao e feita pelo proximo bit do hash, definido pela profundidade local antiga.
                 if (((i >> oldLocalDepth) & 1) == 0) {
                     writeDirectoryEntry(i, bucketOffset);
                 } else {
@@ -161,6 +165,8 @@ public class ExtensibleHashIndex {
 
         for (Entry entry : bucket.entries) {
             long destination = directoryBucketOffset(entry.key);
+            // Depois de atualizar o diretorio, recalculamos o destino de cada chave.
+            // Quem cai no offset antigo fica no bucket esquerdo; quem cai no novo vai para o direito.
             if (destination == bucketOffset) {
                 left.entries.add(entry);
             } else {
