@@ -207,6 +207,9 @@ public class BPlusTreeIndex {
     }
 
     private SplitResult splitLeaf(long pagePtr, Page leaf) throws IOException {
+        // SPLIT DA FOLHA:
+        // dividimos a folha ao meio. A metade inicial continua na folha esquerda
+        // e a metade final passa para a nova folha direita.
         int mid = leaf.keys.size() / 2;
         Page right = new Page(true);
         right.keys.addAll(leaf.keys.subList(mid, leaf.keys.size()));
@@ -223,6 +226,8 @@ public class BPlusTreeIndex {
         writePage(rightPtr, right);
 
         SplitResult result = new SplitResult();
+        // Na B+, a chave promovida da folha e a MENOR CHAVE DA DIREITA.
+        // Ela sobe para o pai como separador, mas continua armazenada na folha.
         result.promotedKey = right.keys.get(0); // cópia (folha mantém)
         result.leftChild = pagePtr;
         result.rightChild = rightPtr;
@@ -230,6 +235,9 @@ public class BPlusTreeIndex {
     }
 
     private SplitResult splitInternal(long pagePtr, Page node) throws IOException {
+        // SPLIT DO NO INTERNO:
+        // aqui promovemos a chave central. Diferente da folha, essa chave sai do no
+        // interno original e passa a representar a separacao no pai.
         int mid = node.keys.size() / 2;
         String promoted = node.keys.get(mid);
 

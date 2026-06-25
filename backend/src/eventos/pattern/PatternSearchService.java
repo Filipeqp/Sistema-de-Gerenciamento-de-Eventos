@@ -83,6 +83,7 @@ public class PatternSearchService {
             PatternMatchAlgorithm algoritmo) {
         String searchable = normalize(textoOriginal);
         // O algoritmo devolve todas as posicoes em que o padrao aparece dentro do texto do registro.
+        // Essa lista e usada para provar todas as ocorrencias encontradas por BM ou KMP.
         List<Integer> posicoes = algoritmo.search(searchable, pattern);
         if (posicoes.isEmpty()) {
             return;
@@ -94,8 +95,10 @@ public class PatternSearchService {
         item.put("titulo", titulo);
         // totalOcorrencias e o numero de vezes que o padrao apareceu no mesmo registro.
         item.put("totalOcorrencias", posicoes.size());
+        // Posicoes guarda todos os indices onde o padrao apareceu dentro do texto pesquisavel.
         item.put("posicoes", posicoes);
         // O trecho e um recorte do texto original ao redor da primeira ocorrencia para facilitar a exibicao.
+        // As demais ocorrencias continuam registradas em "posicoes"; o trecho mostra contexto visual da primeira.
         item.put("trecho", buildSnippet(textoOriginal, posicoes.get(0), pattern.length()));
         resultados.add(item);
     }
@@ -142,6 +145,7 @@ public class PatternSearchService {
             return "";
         }
         // Mantem contexto antes e depois do match para mostrar ao usuario onde o padrao foi encontrado.
+        // Aqui usamos 20 caracteres antes e 20 depois da primeira ocorrencia.
         int from = Math.max(0, start - 20);
         int to = Math.min(text.length(), start + patternLength + 20);
         return text.substring(from, to).trim();
